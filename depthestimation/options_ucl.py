@@ -45,7 +45,15 @@ class DepthOptions:
                                  help="which model",
                                  choices=["resnet", "cmt", "swin"],
                                  default="resnet")
-        
+        self.parser.add_argument("--train_monodepth",
+                                 help="if set, train manydepth)",
+                                 action="store_true")
+        self.parser.add_argument("--no_teacher",
+                                 help="if set, train with teacher)",
+                                 action="store_true")
+        self.parser.add_argument("--no_reprojection_loss_mask",
+                                 help="if set, train with teacher)",
+                                 action="store_true")
         
         self.parser.add_argument("--depth_binning",
                                  help="defines how the depth bins are constructed for the cost"
@@ -146,6 +154,9 @@ class DepthOptions:
                                  type=float,
                                  help="step ratio of the scheduler",
                                  default=0.1)
+        self.parser.add_argument("--use_adamw",
+                                 help="default = adam",
+                                 action="store_true")
 
         self.parser.add_argument("--scheduler_step_freeze_after_size",
                                  type=int,
@@ -156,6 +167,14 @@ class DepthOptions:
                                  help="step ratio of the scheduler",
                                  default=0.1)
         self.parser.add_argument("--freeze_teacher_and_pose",
+                                 action="store_true",
+                                 help="If set, freeze the weights of the single frame teacher"
+                                      " network and pose network.")
+        self.parser.add_argument("--freeze_teacher",
+                                 action="store_true",
+                                 help="If set, freeze the weights of the single frame teacher"
+                                      " network and pose network.")
+        self.parser.add_argument("--freeze_pose",
                                  action="store_true",
                                  help="If set, freeze the weights of the single frame teacher"
                                       " network and pose network.")

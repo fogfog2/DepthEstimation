@@ -59,8 +59,12 @@ class Trainer:
         assert self.opt.frame_ids[0] == 0, "frame_ids must start with 0"
         assert len(self.opt.frame_ids) > 1, "frame_ids must have more than 1 frame specified"
 
-        self.train_teacher_and_pose = not self.opt.freeze_teacher_and_pose
-        if self.train_teacher_and_pose:
+        #self.train_teacher_and_pose = not self.opt.freeze_teacher_and_pose
+        self.train_teacher = not self.opt.freeze_teacher and not self.opt.no_teacher
+        self.train_pose = not self.opt.freeze_pose
+        
+        #if self.train_teacher_and_pose:
+        if self.train_teacher:
             print('using adaptive depth binning!')
             self.min_depth_tracker = 0.1
             self.max_depth_tracker = 10.0
@@ -85,26 +89,34 @@ class Trainer:
         #encoder_model = "swin_h" 
         #encoder_model = "cmt_h"
 
-        if "resnet" in encoder_model:            
-            self.models["encoder"] = networks.ResnetEncoderMatching(
-                self.opt.num_layers, self.opt.weights_init == "pretrained",
-                input_height=self.opt.height, input_width=self.opt.width,
-                adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
-                depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins)
+        if not self.opt.train_monodepth:
+            if "resnet" in encoder_model:            
+                self.models["encoder"] = networks.ResnetEncoderMatching(
+                    self.opt.num_layers, self.opt.weights_init == "pretrained",
+                    input_height=self.opt.height, input_width=self.opt.width,
+                    adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
+                    depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins)
 
-        elif "swin" in encoder_model:
-            self.models["encoder"] = networks.SwinEncoderMatching(
-                self.opt.num_layers, self.opt.weights_init == "pretrained",
-                input_height=self.opt.height, input_width=self.opt.width,
-                adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
-                depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins, use_swin_feature = self.opt.swin_use_feature)
+            elif "swin" in encoder_model:
+                self.models["encoder"] = networks.SwinEncoderMatching(
+                    self.opt.num_layers, self.opt.weights_init == "pretrained",
+                    input_height=self.opt.height, input_width=self.opt.width,
+                    adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
+                    depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins, use_swin_feature = self.opt.swin_use_feature)
 
-        elif "cmt" in encoder_model:
-            self.models["encoder"] = networks.CMTEncoderMatching(
-                self.opt.num_layers, self.opt.weights_init == "pretrained",
-                input_height=self.opt.height, input_width=self.opt.width,
-                adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
-                depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins, upconv = self.opt.cmt_use_upconv, start_layer = self.opt.cmt_layer, embed_dim = self.opt.cmt_dim, use_cmt_feature = self.opt.cmt_use_feature)
+            elif "cmt" in encoder_model:
+                self.models["encoder"] = networks.CMTEncoderMatching(
+                    self.opt.num_layers, self.opt.weights_init == "pretrained",
+                    input_height=self.opt.height, input_width=self.opt.width,
+                    adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
+                    depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins, upconv = self.opt.cmt_use_upconv, start_layer = self.opt.cmt_layer, embed_dim = self.opt.cmt_dim, use_cmt_feature = self.opt.cmt_use_feature)
+        else:
+             if "resnet" in encoder_model:            
+                self.models["encoder"] = networks.ResnetEncoder(
+                    self.opt.num_layers, self.opt.weights_init == "pretrained",
+                    input_height=self.opt.height, input_width=self.opt.width,
+                    adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
+                    depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins)
 
 
         self.models["encoder"].to(self.device)
@@ -122,26 +134,27 @@ class Trainer:
         self.parameters_to_train += list(self.models["encoder"].parameters())
         self.parameters_to_train += list(self.models["depth"].parameters())
 
-        self.models["mono_encoder"] = \
-            networks.ResnetEncoder(18, self.opt.weights_init == "pretrained")
-        self.models["mono_encoder"].to(self.device)
+        if not self.opt.no_teacher:
+            self.models["mono_encoder"] = \
+                networks.ResnetEncoder(18, self.opt.weights_init == "pretrained")
+            self.models["mono_encoder"].to(self.device)
 
-        # self.models["mono_encoder"] = \
-        #     networks.ResnetEncoderCMT(18, self.opt.weights_init == "pretrained",  input_height=self.opt.height, input_width=self.opt.width,upconv = self.opt.cmt_use_upconv, start_layer = self.opt.cmt_layer, embed_dim = self.opt.cmt_dim, use_cmt_feature = self.opt.cmt_use_feature )
-        # self.models["mono_encoder"].to(self.device)
+            # self.models["mono_encoder"] = \
+            #     networks.ResnetEncoderCMT(18, self.opt.weights_init == "pretrained",  input_height=self.opt.height, input_width=self.opt.width,upconv = self.opt.cmt_use_upconv, start_layer = self.opt.cmt_layer, embed_dim = self.opt.cmt_dim, use_cmt_feature = self.opt.cmt_use_feature )
+            # self.models["mono_encoder"].to(self.device)
 
+            if self.opt.use_attention_decoder:            
+                self.models["mono_depth"] = \
+                    networks.DepthDecoderAttention(self.models["mono_encoder"].num_ch_enc, self.opt.scales, no_spatial= self.opt.attention_only_channel)            
+            else:
+                self.models["mono_depth"] = \
+                    networks.DepthDecoder(self.models["mono_encoder"].num_ch_enc, self.opt.scales)
+            self.models["mono_depth"].to(self.device)
 
-        if self.opt.use_attention_decoder:            
-            self.models["mono_depth"] = \
-                networks.DepthDecoderAttention(self.models["mono_encoder"].num_ch_enc, self.opt.scales, no_spatial= self.opt.attention_only_channel)            
-        else:
-            self.models["mono_depth"] = \
-                networks.DepthDecoder(self.models["mono_encoder"].num_ch_enc, self.opt.scales)
-        self.models["mono_depth"].to(self.device)
-
-        if self.train_teacher_and_pose:
-            self.parameters_to_train += list(self.models["mono_encoder"].parameters())
-            self.parameters_to_train += list(self.models["mono_depth"].parameters())
+            #if self.train_teacher_and_pose:
+            if self.train_teacher:
+                self.parameters_to_train += list(self.models["mono_encoder"].parameters())
+                self.parameters_to_train += list(self.models["mono_depth"].parameters())
 
         self.models["pose_encoder"] = \
             networks.ResnetEncoder(18, self.opt.weights_init == "pretrained",
@@ -154,12 +167,18 @@ class Trainer:
                                  num_frames_to_predict_for=2)
         self.models["pose"].to(self.device)
 
-        if self.train_teacher_and_pose:
+        #if self.train_teacher_and_pose:
+        if self.train_pose:   
             self.parameters_to_train += list(self.models["pose_encoder"].parameters())
             self.parameters_to_train += list(self.models["pose"].parameters())
 
-        self.model_optimizer = optim.Adam(self.parameters_to_train, self.opt.learning_rate)
-        #self.model_optimizer = optim.AdamW(self.parameters_to_train, self.opt.learning_rate)
+        
+        
+        if self.opt.use_adamw:
+            self.model_optimizer = optim.AdamW(self.parameters_to_train, self.opt.learning_rate)
+        else:
+            self.model_optimizer = optim.Adam(self.parameters_to_train, self.opt.learning_rate)
+            
         self.model_lr_scheduler = optim.lr_scheduler.StepLR(
             self.model_optimizer, self.opt.scheduler_step_size, self.opt.scheduler_step_ratio)
 
@@ -267,15 +286,17 @@ class Trainer:
         self.start_time = time.time()
         for self.epoch in range(self.opt.num_epochs):
             if self.epoch == self.opt.freeze_teacher_epoch:
+                #self.freeze_teacher_and_pose()
                 self.freeze_teacher()
 
             self.run_epoch()
             if (self.epoch + 1) % self.opt.save_frequency == 0:
                 self.save_model()
 
-    def freeze_teacher(self):
-        if self.train_teacher_and_pose:
-            self.train_teacher_and_pose = False
+    def freeze_teacher_and_pose(self):
+        if self.train_teacher:
+            self.train_teacher = False
+            self.train_pose = False
             print('freezing teacher and pose networks!')
 
             # here we reinitialise our optimizer to ensure there are no updates to the
@@ -283,6 +304,34 @@ class Trainer:
             self.parameters_to_train = []
             self.parameters_to_train += list(self.models["encoder"].parameters())
             self.parameters_to_train += list(self.models["depth"].parameters())
+            
+            if self.opt.use_adamw:
+                self.model_optimizer = optim.AdamW(self.parameters_to_train, self.opt.learning_rate)
+            else:
+                self.model_optimizer = optim.Adam(self.parameters_to_train, self.opt.learning_rate)   
+                
+            # self.model_lr_scheduler = optim.lr_scheduler.StepLR(
+            #     self.model_optimizer, self.opt.scheduler_step_size, self.opt.scheduler_step_ratio)
+            self.model_lr_scheduler = optim.lr_scheduler.StepLR(
+                self.model_optimizer, self.opt.scheduler_step_freeze_after_size, self.opt.scheduler_step_freeze_after_ratio)
+
+            # # set eval so that teacher + pose batch norm is running average
+            # self.set_eval()
+            # # set train so that multi batch norm is in train mode
+            # self.set_train()
+
+    def freeze_teacher(self):
+        if self.train_teacher:
+            self.train_teacher = False
+            print('freezing teacher and pose networks!')
+
+            # here we reinitialise our optimizer to ensure there are no updates to the
+            # teacher and pose networks
+            self.parameters_to_train = []
+            self.parameters_to_train += list(self.models["encoder"].parameters())
+            self.parameters_to_train += list(self.models["depth"].parameters())
+            self.parameters_to_train += list(self.models["pose"].parameters())
+            self.parameters_to_train += list(self.models["pose_encoder"].parameters())
             #self.model_optimizer = optim.Adam(self.parameters_to_train, self.opt.learning_rate)
             self.model_optimizer = optim.AdamW(self.parameters_to_train, self.opt.learning_rate)
             # self.model_lr_scheduler = optim.lr_scheduler.StepLR(
@@ -294,8 +343,7 @@ class Trainer:
             # self.set_eval()
             # # set train so that multi batch norm is in train mode
             # self.set_train()
-
-
+            
     def run_epoch(self):
         """Run a single epoch of training and validation
         """
@@ -353,7 +401,9 @@ class Trainer:
         outputs = {}
 
         # predict poses for all frames
-        if self.train_teacher_and_pose:
+        
+        #if self.train_teacher_and_pose:
+        if self.train_pose:
             pose_pred = self.predict_poses(inputs, None)
         else:
             with torch.no_grad():
@@ -388,20 +438,22 @@ class Trainer:
                     augmentation_mask[batch_idx] += 1
         outputs['augmentation_mask'] = augmentation_mask
 
-        min_depth_bin = self.min_depth_tracker
-        max_depth_bin = self.max_depth_tracker
+        if not self.opt.no_teacher:
+            min_depth_bin = self.min_depth_tracker
+            max_depth_bin = self.max_depth_tracker
 
-        # single frame path
-        if self.train_teacher_and_pose:
-            feats = self.models["mono_encoder"](inputs["color_aug", 0, 0])
-            mono_outputs.update(self.models['mono_depth'](feats))
-        else:
-            with torch.no_grad():
+            # single frame path
+            #if self.train_teacher_and_pose:
+            if self.train_teacher:
                 feats = self.models["mono_encoder"](inputs["color_aug", 0, 0])
                 mono_outputs.update(self.models['mono_depth'](feats))
+            else:
+                with torch.no_grad():
+                    feats = self.models["mono_encoder"](inputs["color_aug", 0, 0])
+                    mono_outputs.update(self.models['mono_depth'](feats))
 
-        self.generate_images_pred(inputs, mono_outputs)
-        mono_losses = self.compute_losses(inputs, mono_outputs, is_multi=False)
+            self.generate_images_pred(inputs, mono_outputs)
+            mono_losses = self.compute_losses(inputs, mono_outputs, is_multi=False)
 
         # update multi frame outputs dictionary with single frame outputs
         for key in list(mono_outputs.keys()):
@@ -412,36 +464,48 @@ class Trainer:
                 outputs[_key] = mono_outputs[key]
 
         # multi frame path
-        features, lowest_cost, confidence_mask = self.models["encoder"](inputs["color_aug", 0, 0],
-                                                                        lookup_frames,
-                                                                        relative_poses,
-                                                                        inputs[('K', 2)],
-                                                                        inputs[('inv_K', 2)],
-                                                                        min_depth_bin=min_depth_bin,
-                                                                        max_depth_bin=max_depth_bin)
-        outputs.update(self.models["depth"](features))
+        
+        if not self.opt.train_monodepth:
+            features, lowest_cost, confidence_mask = self.models["encoder"](inputs["color_aug", 0, 0],
+                                                                            lookup_frames,
+                                                                            relative_poses,
+                                                                            inputs[('K', 2)],
+                                                                            inputs[('inv_K', 2)],
+                                                                            min_depth_bin=min_depth_bin,
+                                                                            max_depth_bin=max_depth_bin)
+            
+            outputs.update(self.models["depth"](features))
 
-        outputs["lowest_cost"] = F.interpolate(lowest_cost.unsqueeze(1),
-                                               [self.opt.height, self.opt.width],
-                                               mode="nearest")[:, 0]
-        outputs["consistency_mask"] = F.interpolate(confidence_mask.unsqueeze(1),
-                                                    [self.opt.height, self.opt.width],
-                                                    mode="nearest")[:, 0]
+            outputs["lowest_cost"] = F.interpolate(lowest_cost.unsqueeze(1),
+                                                [self.opt.height, self.opt.width],
+                                                mode="nearest")[:, 0]
+            outputs["consistency_mask"] = F.interpolate(confidence_mask.unsqueeze(1),
+                                                        [self.opt.height, self.opt.width],
+                                                        mode="nearest")[:, 0]
 
-        if not self.opt.disable_motion_masking:
-            outputs["consistency_mask"] = (outputs["consistency_mask"] *
-                                           self.compute_matching_mask(outputs))
+            if not self.opt.disable_motion_masking:
+                outputs["consistency_mask"] = (outputs["consistency_mask"] *
+                                            self.compute_matching_mask(outputs))
 
-        self.generate_images_pred(inputs, outputs, is_multi=True)
-        losses = self.compute_losses(inputs, outputs, is_multi=True)
+            self.generate_images_pred(inputs, outputs, is_multi=True)
+            losses = self.compute_losses(inputs, outputs, is_multi=True)
+        else:
+            features = self.models["encoder"](inputs["color_aug", 0, 0])
+            
+            outputs.update(self.models["depth"](features))
+
+            self.generate_images_pred(inputs, outputs, is_multi=False)
+            losses = self.compute_losses(inputs, outputs, is_multi=False)
 
         # update losses with single frame losses
-        if self.train_teacher_and_pose:
+        #if self.train_teacher_and_pose:
+        if self.train_teacher:
             for key, val in mono_losses.items():
                 losses[key] += val
 
         # update adaptive depth bins
-        if self.train_teacher_and_pose:
+        #if self.train_teacher_and_pose:
+        if self.train_teacher:
             self.update_adaptive_depth_bins(outputs)
 
         return outputs, losses
@@ -702,8 +766,20 @@ class Trainer:
                 consistency_mask = (1 - reprojection_loss_mask).float()
 
             # standard reprojection loss
-            reprojection_loss = reprojection_loss * reprojection_loss_mask
-            reprojection_loss = reprojection_loss.sum() / (reprojection_loss_mask.sum() + 1e-7)
+            
+            if not self.opt.no_reprojection_loss_mask:
+                reprojection_loss = reprojection_loss * reprojection_loss_mask
+                reprojection_loss = reprojection_loss.sum() / (reprojection_loss_mask.sum() + 1e-7)
+            else:
+                min_losses = []
+                
+                min_losses.append(reprojection_loss)
+                min_losses.append(identity_reprojection_loss)
+                 
+                min_losses= torch.cat(min_losses,1)
+                reprojection_loss = torch.min(min_losses, dim=1, keepdim=True)[0]
+                reprojection_loss = reprojection_loss.mean()
+                 
 
             # consistency loss:
             # encourage multi frame prediction to be like singe frame where masking is happening
@@ -821,10 +897,11 @@ class Trainer:
                 "disp_multi_{}/{}".format(s, j),
                 disp, self.step)
 
-            disp = colormap(outputs[('mono_disp', s)][j, 0])
-            writer.add_image(
-                "disp_mono/{}".format(j),
-                disp, self.step)
+            if not self.opt.no_teacher:
+                disp = colormap(outputs[('mono_disp', s)][j, 0])
+                writer.add_image(
+                    "disp_mono/{}".format(j),
+                    disp, self.step)
 
             if outputs.get("lowest_cost") is not None:
                 lowest_cost = outputs["lowest_cost"][j]
@@ -884,8 +961,10 @@ class Trainer:
                 to_save['height'] = self.opt.height
                 to_save['width'] = self.opt.width
                 # save estimates of depth bins
-                to_save['min_depth_bin'] = self.min_depth_tracker
-                to_save['max_depth_bin'] = self.max_depth_tracker
+                
+                if not self.opt.no_teacher:
+                    to_save['min_depth_bin'] = self.min_depth_tracker
+                    to_save['max_depth_bin'] = self.max_depth_tracker
             torch.save(to_save, save_path)
 
         save_path = os.path.join(save_folder, "{}.pth".format("adam"))

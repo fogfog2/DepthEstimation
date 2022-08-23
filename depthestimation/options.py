@@ -147,6 +147,7 @@ class DepthOptions:
                                  help="step ratio of the scheduler",
                                  default=0.1)
 
+
         self.parser.add_argument("--scheduler_step_freeze_after_size",
                                  type=int,
                                  help="step size of the scheduler",
