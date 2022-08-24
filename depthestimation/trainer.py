@@ -111,8 +111,14 @@ class Trainer:
                     adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
                     depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins, upconv = self.opt.cmt_use_upconv, start_layer = self.opt.cmt_layer, embed_dim = self.opt.cmt_dim, use_cmt_feature = self.opt.cmt_use_feature)
         else:
-             if "resnet" in encoder_model:            
+            if "resnet" in encoder_model:            
                 self.models["encoder"] = networks.ResnetEncoder(
+                    self.opt.num_layers, self.opt.weights_init == "pretrained",
+                    input_height=self.opt.height, input_width=self.opt.width,
+                    adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
+                    depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins)
+            elif "cmt" in encoder_model:            
+                self.models["encoder"] = networks.ResnetEncoderCMT(
                     self.opt.num_layers, self.opt.weights_init == "pretrained",
                     input_height=self.opt.height, input_width=self.opt.width,
                     adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
