@@ -185,8 +185,10 @@ class Project3D(nn.Module):
     def forward(self, points, K, T):
         P = torch.matmul(K, T)[:, :3, :]
 
+        # transform Q_t -> Q_t->s
         cam_points = torch.matmul(P, points)
 
+        # projection Q_t->s -> p_s
         pix_coords = cam_points[:, :2, :] / (cam_points[:, 2, :].unsqueeze(1) + self.eps)
         pix_coords = pix_coords.view(self.batch_size, 2, self.height, self.width)
         pix_coords = pix_coords.permute(0, 2, 3, 1)
@@ -195,7 +197,25 @@ class Project3D(nn.Module):
         pix_coords = (pix_coords - 0.5) * 2
         return pix_coords
 
+class Transform3D(nn.Module):
+    """Layer which projects 3D points into a camera with intrinsics K and at position T
+    """
 
+    def __init__(self, batch_size, height, width):
+        super(Transform3D, self).__init__()
+
+        self.batch_size = batch_size
+        self.height = height
+        self.width = width
+
+    def forward(self, points, K, T):
+        P = torch.matmul(K, T)[:, :3, :]
+        
+        # transform Q_t -> Q_t->s
+        cam_points = torch.matmul(P, points)
+        
+        return cam_points[:, 2, :].view(self.batch_size,1, self.height, self.width)
+    
 def upsample(x):
     """Upsample input tensor by a factor of 2
     """

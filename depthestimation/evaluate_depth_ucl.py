@@ -118,6 +118,8 @@ def evaluate(opt):
             else:
                 if "resnet" in encoder_model:            
                     encoder_class = networks.ResnetEncoder 
+                elif "cmt" in encoder_model:
+                    encoder_class = networks.ResnetEncoderCMT
             #encoder_class = networks.ResnetEncoderMatching
 
         encoder_dict = torch.load(encoder_path)

@@ -129,6 +129,16 @@ class DepthOptions:
                                  help="attetnion channel",
                                  action="store_true")
         
+        #depth_reconstruction_loss
+        
+        self.parser.add_argument("--depth_reconstruction_loss",
+                                 help="depth_reconstruction_loss",
+                                 action="store_true")
+        self.parser.add_argument("--reconstruction_loss_weight",
+                                 type=float,
+                                 help="learning rate",
+                                 default=1.0)
+          
         #swin option
         self.parser.add_argument("--swin_use_feature",
                                  help="start swin layer",

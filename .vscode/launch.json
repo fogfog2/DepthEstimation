@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Python: Current File",
             "type": "python",
@@ -14,13 +15,26 @@
                 
             "program": "${workspaceFolder}/depthestimation/train.py",
             "args": ["--data_path=/home/sj/colon",
-            "--log_dir=/home/sj/tmp/mono_s5_r05_rp_adam",   
+            "--log_dir=/home/sj/tmp/test",   
             "--train_model=cmt",
             "--train_monodepth",
             "--no_teacher",
+            "--depth_reconstruction_loss",
+            "--reconstruction_loss_weight=0.1",
             "--scheduler_step_ratio=0.5",
             "--freeze_teacher_epoch=-1",
             "--png"]
+
+
+            // "program": "${workspaceFolder}/depthestimation/train.py",
+            // "args": ["--data_path=/home/sj/colon",
+            // "--log_dir=/home/sj/tmp/mono_s5_r05_rp_adam",   
+            // "--train_model=cmt",
+            // "--train_monodepth",
+            // "--no_teacher",
+            // "--scheduler_step_ratio=0.5",
+            // "--freeze_teacher_epoch=-1",
+            // "--png"]
 
 
             // "program": "${workspaceFolder}/depthestimation/train.py",
@@ -34,10 +48,12 @@
 
             // "program": "${workspaceFolder}/depthestimation/evaluate_depth_ucl.py",
             // "args": ["--data_path=/home/sj/colon",
-            //     "--load_weights_folder=/home/sj/tmp/mono_s5_r05_rp_adam/mdp/models/weights_18",
+            //     "--load_weights_folder=/home/sj/tmp/mono_s5_r05_cmt_noup/mdp/models/weights_39",
+            //     "--train_model=cmt",
             //     "--eval_split=custom_ucl",
             //     "--eval_mono",
             //     "--no_teacher",
+            //  //   "--cmt_use_upconv",
             //     "--png"]
 
             //  "program": "${workspaceFolder}/depthestimation/train.py",

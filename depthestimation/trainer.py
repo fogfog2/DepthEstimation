@@ -20,7 +20,7 @@ from tensorboardX import SummaryWriter
 import json
 
 from utils import readlines, sec_to_hm_str
-from layers import SSIM, BackprojectDepth, Project3D, transformation_from_parameters, \
+from layers import SSIM, BackprojectDepth, Project3D, Transform3D, transformation_from_parameters, \
     disp_to_depth, get_smooth_loss, compute_depth_errors
 
 from depthestimation import datasets, networks
@@ -122,7 +122,7 @@ class Trainer:
                     self.opt.num_layers, self.opt.weights_init == "pretrained",
                     input_height=self.opt.height, input_width=self.opt.width,
                     adaptive_bins=True, min_depth_bin=0.1, max_depth_bin=20.0,
-                    depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins)
+                    depth_binning=self.opt.depth_binning, num_depth_bins=self.opt.num_depth_bins, upconv = self.opt.cmt_use_upconv, start_layer = self.opt.cmt_layer, embed_dim = self.opt.cmt_dim, use_cmt_feature = self.opt.cmt_use_feature)
 
 
         self.models["encoder"].to(self.device)
@@ -242,7 +242,9 @@ class Trainer:
             self.ssim.to(self.device)
 
         self.backproject_depth = {}
+        self.backproject_depth2 = {}
         self.project_3d = {}
+        self.transfrom_3d = {}
 
         for scale in self.opt.scales:
             h = self.opt.height // (2 ** scale)
@@ -250,9 +252,16 @@ class Trainer:
 
             self.backproject_depth[scale] = BackprojectDepth(self.opt.batch_size, h, w)
             self.backproject_depth[scale].to(self.device)
+            
+            self.backproject_depth2[scale] = BackprojectDepth(self.opt.batch_size, h, w)
+            self.backproject_depth2[scale].to(self.device)
 
             self.project_3d[scale] = Project3D(self.opt.batch_size, h, w)
             self.project_3d[scale].to(self.device)
+            
+            self.transfrom_3d[scale] = Transform3D(self.opt.batch_size, h, w)
+            self.transfrom_3d[scale].to(self.device)
+            
 
         self.depth_metric_names = [
             "de/abs_rel", "de/sq_rel", "de/rms", "de/log_rms", "da/a1", "da/a2", "da/a3"]
@@ -469,8 +478,7 @@ class Trainer:
                 _key = tuple(_key)
                 outputs[_key] = mono_outputs[key]
 
-        # multi frame path
-        
+        # multi frame path        
         if not self.opt.train_monodepth:
             features, lowest_cost, confidence_mask = self.models["encoder"](inputs["color_aug", 0, 0],
                                                                             lookup_frames,
@@ -495,13 +503,29 @@ class Trainer:
 
             self.generate_images_pred(inputs, outputs, is_multi=True)
             losses = self.compute_losses(inputs, outputs, is_multi=True)
-        else:
-            features = self.models["encoder"](inputs["color_aug", 0, 0])
+        else: #monodepth
             
-            outputs.update(self.models["depth"](features))
-
-            self.generate_images_pred(inputs, outputs, is_multi=False)
-            losses = self.compute_losses(inputs, outputs, is_multi=False)
+            if not self.opt.depth_reconstruction_loss:
+                features = self.models["encoder"](inputs["color_aug", 0, 0])            
+                outputs.update(self.models["depth"](features))
+                self.generate_images_pred(inputs, outputs, is_multi=False)
+                losses = self.compute_losses(inputs, outputs, is_multi=False)
+            else:
+                features = self.models["encoder"](inputs["color_aug", 0, 0])            
+                outputs.update(self.models["depth"](features))
+                
+                with torch.no_grad():
+                    sample_features = self.models["encoder"](inputs["color_aug", -1, 0])            
+                    sample_output = self.models["depth"](sample_features)
+                    
+                    sample_features2 = self.models["encoder"](inputs["color_aug", 1, 0])            
+                    sample_output2 = self.models["depth"](sample_features2)
+                    
+                    outputs["disp_sample",-1] =sample_output               
+                    outputs["disp_sample",1] =sample_output2               
+                
+                self.generate_images_pred_drl(inputs, outputs, is_multi=False)
+                losses = self.compute_losses_drl(inputs, outputs, is_multi=False)
 
         # update losses with single frame losses
         #if self.train_teacher_and_pose:
@@ -560,6 +584,10 @@ class Trainer:
                     # Invert the matrix if the frame id is negative
                     outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
                         axisangle[:, 0], translation[:, 0], invert=(f_i < 0))
+                    
+                    #inver pose matrix
+                    outputs[("cam_T_cam", -1, f_i)] = transformation_from_parameters(
+                        axisangle[:, 0], translation[:, 0], invert=(f_i > 0))
 
             # now we need poses for matching - compute without gradients
             pose_feats = {f_i: inputs["color_aug", f_i, 0] for f_i in self.matching_ids}
@@ -643,22 +671,98 @@ class Trainer:
                     # don't update posenet based on multi frame prediction
                     T = T.detach()
 
+                
+                #D_t   -> Q_t 
                 cam_points,_ = self.backproject_depth[source_scale](
                     depth, inputs[("inv_K", source_scale)])
+                
+                #Q_t   ->    Q_t->s  ->  p_s
                 pix_coords = self.project_3d[source_scale](
                     cam_points, inputs[("K", source_scale)], T)
 
                 outputs[("sample", frame_id, scale)] = pix_coords
 
+                # I_s->t (p_s)
+                outputs[("color", frame_id, scale)] = F.grid_sample(
+                    inputs[("color", frame_id, source_scale)],
+                    outputs[("sample", frame_id, scale)],
+                    padding_mode="border", align_corners=True)
+                
+              
+                if not self.opt.disable_automasking:
+                    outputs[("color_identity", frame_id, scale)] = \
+                        inputs[("color", frame_id, source_scale)]
+                        
+    def generate_images_pred_drl(self, inputs, outputs, is_multi=False):
+        """Generate the warped (reprojected) color images for a minibatch.
+        Generated images are saved into the `outputs` dictionary.
+        """
+        for scale in self.opt.scales:
+            disp = outputs[("disp", scale)]
+            disp_sample_p = outputs["disp_sample",-1][("disp", scale)]
+            disp_sample_a = outputs["disp_sample",1][("disp", scale)]
+            if self.opt.v1_multiscale:
+                source_scale = scale
+            else:
+                disp = F.interpolate(
+                    disp, [self.opt.height, self.opt.width], mode="bilinear", align_corners=False)
+                disp_sample_p = F.interpolate(
+                    disp_sample_p, [self.opt.height, self.opt.width], mode="bilinear", align_corners=False)
+                disp_sample_a = F.interpolate(
+                    disp_sample_a, [self.opt.height, self.opt.width], mode="bilinear", align_corners=False)
+                source_scale = 0
+
+            _, depth = disp_to_depth(disp, self.opt.min_depth, self.opt.max_depth)
+            _, depth_sample_a = disp_to_depth(disp_sample_a, self.opt.min_depth, self.opt.max_depth)
+            _, depth_sample_p = disp_to_depth(disp_sample_p, self.opt.min_depth, self.opt.max_depth)
+            
+            outputs[("depth", 0, scale)] = depth
+            outputs[("depth", -1, scale)] = depth_sample_p
+            outputs[("depth", 1, scale)] = depth_sample_a
+
+            for i, frame_id in enumerate(self.opt.frame_ids[1:]):
+                T = outputs[("cam_T_cam", 0, frame_id)]
+                inv_T =outputs[("cam_T_cam", -1, frame_id)]
+                if is_multi:
+                    # don't update posenet based on multi frame prediction
+                    T = T.detach()
+                    inv_T = inv_T.detach()
+                
+                #D_t   -> Q_t 
+                cam_points,_ = self.backproject_depth[source_scale](
+                    depth, inputs[("inv_K", source_scale)])
+                
+                #Q_t   ->    Q_t->s  ->  p_s
+                pix_coords = self.project_3d[source_scale](
+                    cam_points, inputs[("K", source_scale)], T)
+
+                outputs[("sample", frame_id, scale)] = pix_coords
+
+                # I_s->t (p_s)
                 outputs[("color", frame_id, scale)] = F.grid_sample(
                     inputs[("color", frame_id, source_scale)],
                     outputs[("sample", frame_id, scale)],
                     padding_mode="border", align_corners=True)
 
+                # D_s -> D_s->t (p_s)
+                outputs[("depth_warped", frame_id, scale)] = F.grid_sample(
+                    outputs[("depth", frame_id, source_scale)],
+                    outputs[("sample", frame_id, scale)],
+                    padding_mode="border", align_corners=True)
+
+                #D_s->t -> Q_s->t
+                cam_points2, _ = self.backproject_depth2[source_scale](
+                    outputs[("depth_warped", frame_id, scale)] ,  inputs[("inv_K", source_scale)])
+ 
+                #Q_s -> Q_s->->t
+                outputs[("depth_warped_recon", frame_id, scale)] = self.transfrom_3d[source_scale](
+                    cam_points2 , inputs[("K", source_scale)], inv_T)
+
+
                 if not self.opt.disable_automasking:
                     outputs[("color_identity", frame_id, scale)] = \
                         inputs[("color", frame_id, source_scale)]
-
+                        
     def compute_reprojection_loss(self, pred, target):
         """Computes reprojection loss between a batch of predicted and target images
         """
@@ -822,6 +926,139 @@ class Trainer:
 
         return losses
 
+    def compute_losses_drl(self, inputs, outputs, is_multi=False):
+        """Compute the reprojection, smoothness and proxy supervised losses for a minibatch
+        """
+        losses = {}
+        total_loss = 0
+
+        for scale in self.opt.scales:
+            loss = 0
+            reprojection_losses = []
+            depth_reprojection_losses = []
+
+            if self.opt.v1_multiscale:
+                source_scale = scale
+            else:
+                source_scale = 0
+
+            disp = outputs[("disp", scale)]
+            color = inputs[("color", 0, scale)]
+            depth = outputs[("depth",0, scale)]
+            target = inputs[("color", 0, source_scale)]
+            
+            
+
+            for frame_id in self.opt.frame_ids[1:]:
+                pred = outputs[("color", frame_id, scale)]
+                reprojection_losses.append(self.compute_reprojection_loss(pred, target))
+            reprojection_losses = torch.cat(reprojection_losses, 1)
+
+            for frame_id in self.opt.frame_ids[1:]:
+                pred = outputs[("depth_warped_recon", frame_id, scale)]                
+                depth_reprojection_losses.append(self.compute_reprojection_loss(pred, depth))
+            depth_reprojection_losses = torch.cat(depth_reprojection_losses, 1)
+            depth_reprojection_loss, _ = torch.min(depth_reprojection_losses, dim=1, keepdim=True)
+            depth_reprojection_loss = depth_reprojection_loss.mean()*self.opt.reconstruction_loss_weight
+            #depth_reprojection_loss = depth_reprojection_loss.sum()*self.opt.reconstruction_loss_weight
+            if not self.opt.disable_automasking:
+                identity_reprojection_losses = []
+                for frame_id in self.opt.frame_ids[1:]:
+                    pred = inputs[("color", frame_id, source_scale)]
+                    identity_reprojection_losses.append(
+                        self.compute_reprojection_loss(pred, target))
+
+                identity_reprojection_losses = torch.cat(identity_reprojection_losses, 1)
+
+                if self.opt.avg_reprojection:
+                    identity_reprojection_loss = identity_reprojection_losses.mean(1, keepdim=True)
+                else:
+                    # differently to Monodepth2, compute mins as we go
+                    identity_reprojection_loss, _ = torch.min(identity_reprojection_losses, dim=1,
+                                                              keepdim=True)
+            else:
+                identity_reprojection_loss = None
+
+            if self.opt.avg_reprojection:
+                reprojection_loss = reprojection_losses.mean(1, keepdim=True)
+            else:
+                # differently to Monodepth2, compute mins as we go
+                reprojection_loss, _ = torch.min(reprojection_losses, dim=1, keepdim=True)
+
+            if not self.opt.disable_automasking:
+                # add random numbers to break ties
+                identity_reprojection_loss += torch.randn(
+                    identity_reprojection_loss.shape).to(self.device) * 0.00001
+
+            # find minimum losses from [reprojection, identity]
+            reprojection_loss_mask = self.compute_loss_masks(reprojection_loss,
+                                                             identity_reprojection_loss)
+
+            # find which pixels to apply reprojection loss to, and which pixels to apply
+            # consistency loss to
+            if is_multi:
+                reprojection_loss_mask = torch.ones_like(reprojection_loss_mask)
+                if not self.opt.disable_motion_masking:
+                    reprojection_loss_mask = (reprojection_loss_mask *
+                                              outputs['consistency_mask'].unsqueeze(1))
+                if not self.opt.no_matching_augmentation:
+                    reprojection_loss_mask = (reprojection_loss_mask *
+                                              (1 - outputs['augmentation_mask']))
+                consistency_mask = (1 - reprojection_loss_mask).float()
+
+            # standard reprojection loss
+            # depth_reprojection_loss = depth_reprojection_loss * reprojection_loss_mask                
+            # depth_reprojection_loss = depth_reprojection_loss.sum() / (reprojection_loss_mask.sum() + 1e-7)
+            # depth_reprojection_loss = depth_reprojection_loss * self.opt.reconstruction_loss_weight
+            if not self.opt.no_reprojection_loss_mask:
+                reprojection_loss = reprojection_loss * reprojection_loss_mask
+                reprojection_loss = reprojection_loss.sum() / (reprojection_loss_mask.sum() + 1e-7)
+            else:
+                min_losses = []
+                
+                min_losses.append(reprojection_loss)
+                min_losses.append(identity_reprojection_loss)
+                 
+                min_losses= torch.cat(min_losses,1)
+                reprojection_loss = torch.min(min_losses, dim=1, keepdim=True)[0]
+                reprojection_loss = reprojection_loss.mean()
+                 
+
+            # consistency loss:
+            # encourage multi frame prediction to be like singe frame where masking is happening
+            if is_multi:
+                multi_depth = outputs[("depth", 0, scale)]
+                # no gradients for mono prediction!
+                mono_depth = outputs[("mono_depth", 0, scale)].detach()
+                consistency_loss = torch.abs(multi_depth - mono_depth) * consistency_mask
+                consistency_loss = consistency_loss.mean()
+
+                # save for logging to tensorboard
+                consistency_target = (mono_depth.detach() * consistency_mask +
+                                      multi_depth.detach() * (1 - consistency_mask))
+                consistency_target = 1 / consistency_target
+                outputs["consistency_target/{}".format(scale)] = consistency_target
+                losses['consistency_loss/{}'.format(scale)] = consistency_loss
+            else:
+                consistency_loss = 0
+
+            losses['reproj_loss/{}'.format(scale)] = reprojection_loss
+            losses['depth_reproj_loss/{}'.format(scale)] = depth_reprojection_loss
+
+            loss += reprojection_loss + consistency_loss + depth_reprojection_loss
+
+            mean_disp = disp.mean(2, True).mean(3, True)
+            norm_disp = disp / (mean_disp + 1e-7)
+            smooth_loss = get_smooth_loss(norm_disp, color)
+
+            loss += self.opt.disparity_smoothness * smooth_loss / (2 ** scale)
+            total_loss += loss
+            losses["loss/{}".format(scale)] = loss
+
+        total_loss /= self.num_scales
+        losses["loss"] = total_loss
+
+        return losses
     def compute_depth_losses(self, inputs, outputs, losses):
         """Compute depth metrics, to allow monitoring during training
 
