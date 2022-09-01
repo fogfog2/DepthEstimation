@@ -15,8 +15,8 @@
                 
             "program": "${workspaceFolder}/depthestimation/train.py",
             "args": ["--data_path=/home/sj/colon",
+            "--cuda_device=1",
             "--log_dir=/home/sj/tmp/test",   
-            "--train_model=cmt",
             "--train_monodepth",
             "--no_teacher",
             "--depth_reconstruction_loss",
@@ -48,8 +48,7 @@
 
             // "program": "${workspaceFolder}/depthestimation/evaluate_depth_ucl.py",
             // "args": ["--data_path=/home/sj/colon",
-            //     "--load_weights_folder=/home/sj/tmp/mono_s5_r05_cmt_noup/mdp/models/weights_39",
-            //     "--train_model=cmt",
+            //     "--load_weights_folder=/home/sj/tmp/mono_drl_01/mdp/models/weights_39",
             //     "--eval_split=custom_ucl",
             //     "--eval_mono",
             //     "--no_teacher",

@@ -1134,12 +1134,34 @@ class Trainer:
                     writer.add_image(
                         "color_pred_{}_{}/{}".format(frame_id, s, j),
                         outputs[("color", frame_id, s)][j].data, self.step)
+                    
+                if self.opt.depth_reconstruction_loss and frame_id !=0:
+                    depth_warped_recon = colormap(outputs[("depth_warped_recon", frame_id, s)][j,0])
+                    depth_warped = colormap(outputs[("depth_warped", frame_id, s)][j,0])
+                    diff_depth = colormap(abs(outputs[("depth_warped_recon", frame_id, s)][j,0]-outputs[("depth", frame_id, s)][j,0]))
+                    depth = colormap(outputs[("depth", frame_id, s)][j,0])
+                    writer.add_image(
+                        "depth_warped_recon_{}_{}/{}".format(frame_id, s, j),
+                        depth_warped_recon, self.step)
+                    writer.add_image(
+                        "depth_warped_{}_{}/{}".format(frame_id, s, j),
+                        depth_warped, self.step)
+                    writer.add_image(
+                        "depth__{}_{}/{}".format(frame_id, s, j),
+                        depth, self.step)
+                    writer.add_image(
+                        "diff_depth__{}_{}/{}".format(frame_id, s, j),
+                        diff_depth, self.step)
+                    
 
             disp = colormap(outputs[("disp", s)][j, 0])
             writer.add_image(
                 "disp_multi_{}/{}".format(s, j),
                 disp, self.step)
 
+            
+                
+                
             if not self.opt.no_teacher:
                 disp = colormap(outputs[('mono_disp', s)][j, 0])
                 writer.add_image(

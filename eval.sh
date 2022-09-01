@@ -4,7 +4,7 @@ export PYTHONPATH="${PYTHONPATH}:/home/sj/src/DepthEstimation"
 DATA_PATH=/home/sj/colon
 
 
-LOG_PATH3=/home/sj/tmp/mono_drl_01
+LOG_PATH3=/home/sj/tmp/mono_drl_01_adam
 
 
 SET=$(seq 20 39)
