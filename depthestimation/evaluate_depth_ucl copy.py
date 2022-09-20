@@ -500,200 +500,113 @@ def evaluate(opt):
             
         #     row = int(math.sqrt(shape[0])+0.5)
         
-        set_rowcol = False
-        set_sum = True
+        for i in range(5):
+            
+            p = features_out[i].shape[0]
+            
+            for j in range(p):
+                 cv2.normalize(features_out[i][j],features_out[i][j],0,1,cv2.NORM_MINMAX) 
+            
         
-        if set_rowcol:        
-            for i in range(5):
-                
-                p = features_out[i].shape[0]
-                
-                for j in range(p):
-                    cv2.normalize(features_out[i][j],features_out[i][j],0,1,cv2.NORM_MINMAX) 
-                
+        step_size = 8
+        input_channel = 0
+        img = []
+        for j in range(step_size):
+            img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
+            for i in range(1,step_size-1,1):
+                img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
+            img.append(img1)
+            
+        img2 = np.concatenate((img[0], img[1]), axis=0)                
+        for k in range(1,len(img)-1,1):            
+            img2= np.concatenate((img2, img[k+1]), axis=0)               
+        #img1=  features_out[0].reshape((1024,1024))        
+        cv2.imshow("test",img2)
+        
+        step_size = 8
+        input_channel = 1
+        img = []
+        for j in range(step_size):
+            img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
+            for i in range(1,step_size-1,1):
+                img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
+            img.append(img1)
+            
+        img3 = np.concatenate((img[0], img[1]), axis=0)                
+        for k in range(1,len(img)-1,1):            
+            img3= np.concatenate((img3, img[k+1]), axis=0)               
+        #img1=  features_out[0].reshape((1024,1024))        
+        cv2.imshow("test2",img3)
+        
+        if not "cmt" in encoder_model:
             step_size = 8
-            input_channel = 0
+            input_channel = 2
             img = []
-            for j in range(step_size):
+            for j in range(step_size*2):
                 img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
                 for i in range(1,step_size-1,1):
                     img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
                 img.append(img1)
                 
-            img2 = np.concatenate((img[0], img[1]), axis=0)                
+            img4 = np.concatenate((img[0], img[1]), axis=0)                
             for k in range(1,len(img)-1,1):            
-                img2= np.concatenate((img2, img[k+1]), axis=0)               
+                img4= np.concatenate((img4, img[k+1]), axis=0)               
             #img1=  features_out[0].reshape((1024,1024))        
-            #cv2.imshow("test",img2)
+            cv2.imshow("test3",img4)
             
             step_size = 8
-            input_channel = 1
+            input_channel = 3
             img = []
-            for j in range(step_size):
+            for j in range(step_size*2):
                 img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
-                for i in range(1,step_size-1,1):
+                for i in range(1,step_size*2-1,1):
                     img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
                 img.append(img1)
                 
-            img3 = np.concatenate((img[0], img[1]), axis=0)                
+            img5 = np.concatenate((img[0], img[1]), axis=0)                
             for k in range(1,len(img)-1,1):            
-                img3= np.concatenate((img3, img[k+1]), axis=0)               
+                img5= np.concatenate((img5, img[k+1]), axis=0)               
             #img1=  features_out[0].reshape((1024,1024))        
-            #cv2.imshow("test2",img3)
-            
-            if not "cmt" in encoder_model:
-                step_size = 8
-                input_channel = 2
-                img = []
-                for j in range(step_size*2):
-                    img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
-                    for i in range(1,step_size-1,1):
-                        img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
-                    img.append(img1)
-                    
-                img4 = np.concatenate((img[0], img[1]), axis=0)                
-                for k in range(1,len(img)-1,1):            
-                    img4= np.concatenate((img4, img[k+1]), axis=0)               
-                #img1=  features_out[0].reshape((1024,1024))        
-                #cv2.imshow("test3",img4)
-                
-                step_size = 8
-                input_channel = 3
-                img = []
-                for j in range(step_size*2):
-                    img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
-                    for i in range(1,step_size*2-1,1):
-                        img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
-                    img.append(img1)
-                    
-                img5 = np.concatenate((img[0], img[1]), axis=0)                
-                for k in range(1,len(img)-1,1):            
-                    img5= np.concatenate((img5, img[k+1]), axis=0)               
-                #img1=  features_out[0].reshape((1024,1024))        
-                #cv2.imshow("test4",img5)
-            else:
-                step_size = 23
-                input_channel = 2
-                img = []
-                for j in range(4):
-                    img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
-                    for i in range(1,step_size-1,1):
-                        img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
-                    img.append(img1)
-                    
-                img4 = np.concatenate((img[0], img[1]), axis=0)                
-                for k in range(1,len(img)-1,1):            
-                    img4= np.concatenate((img4, img[k+1]), axis=0)               
-                #img1=  features_out[0].reshape((1024,1024))        
-                #cv2.normalize(img4,  img4, 0, 1, cv2.NORM_MINMAX)
-                #cv2.imshow("test3",img4)
-                
-                step_size = 23
-                input_channel = 3
-                img = []
-                for j in range(8):
-                    img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
-                    for i in range(1,step_size-1,1):
-                        img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
-                    img.append(img1)
-                    
-                img5 = np.concatenate((img[0], img[1]), axis=0)                
-                for k in range(1,len(img)-1,1):            
-                    img5= np.concatenate((img5, img[k+1]), axis=0)               
-                #img1=  features_out[0].reshape((1024,1024))        
-                #cv2.normalize(img5,  img5, 0, 1, cv2.NORM_MINMAX)
-                #cv2.imshow("test4",img5)
+            cv2.imshow("test4",img5)
         else:
-            for i in range(5):            
-                p = features_out[i].shape[0]
-            
-                for j in range(p):
-                    cv2.normalize(features_out[i][j],features_out[i][j],0,1,cv2.NORM_MINMAX) 
-            
-            step_size = 8
-            input_channel = 0
+            step_size = 23
+            input_channel = 2
             img = []
-            for j in range(len(features_out[input_channel])):
-                img.append(features_out[input_channel][j])
-            
-            img2 = sum(img)/len(features_out[input_channel])
+            for j in range(4):
+                img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
+                for i in range(1,step_size-1,1):
+                    img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
+                img.append(img1)
+                
+            img4 = np.concatenate((img[0], img[1]), axis=0)                
+            for k in range(1,len(img)-1,1):            
+                img4= np.concatenate((img4, img[k+1]), axis=0)               
             #img1=  features_out[0].reshape((1024,1024))        
-            #cv2.imshow("test",img2)
+            #cv2.normalize(img4,  img4, 0, 1, cv2.NORM_MINMAX)
+            cv2.imshow("test3",img4)
             
-            step_size = 8
-            input_channel = 1
+            step_size = 23
+            input_channel = 3
             img = []
-            for j in range(len(features_out[input_channel])):
-                img.append(features_out[input_channel][j])
-            
-            img3 = sum(img)/len(features_out[input_channel])   
+            for j in range(8):
+                img1 = np.concatenate((features_out[input_channel][j*step_size+0], features_out[input_channel][j*step_size+1]),axis=1)               
+                for i in range(1,step_size-1,1):
+                    img1 = np.concatenate((img1, features_out[input_channel][j*step_size+ i+1]),axis=1)            
+                img.append(img1)
+                
+            img5 = np.concatenate((img[0], img[1]), axis=0)                
+            for k in range(1,len(img)-1,1):            
+                img5= np.concatenate((img5, img[k+1]), axis=0)               
             #img1=  features_out[0].reshape((1024,1024))        
-            #cv2.imshow("test2",img3)
-            
-            if not "cmt" in encoder_model:
-                step_size = 8
-                input_channel = 2
-                img = []
-                for j in range(len(features_out[input_channel])):
-                    img.append(features_out[input_channel][j])
-            
-                img4 = sum(img)/len(features_out[input_channel])        
-                #img1=  features_out[0].reshape((1024,1024))        
-                #cv2.imshow("test3",img4)
-                
-                step_size = 8
-                input_channel = 3
-                img = []
-                for j in range(len(features_out[input_channel])):
-                    img.append(features_out[input_channel][j])
-            
-                img5 = sum(img)/len(features_out[input_channel])     
-                #img1=  features_out[0].reshape((1024,1024))        
-                #cv2.imshow("test4",img5)
-            else:
-                step_size = 23
-                input_channel = 2
-                img = []
-                for j in range(len(features_out[input_channel])):
-                    img.append(features_out[input_channel][j])
-            
-                img4 = sum(img)/len(features_out[input_channel])  
-                #img1=  features_out[0].reshape((1024,1024))        
-                #cv2.normalize(img4,  img4, 0, 1, cv2.NORM_MINMAX)
-                #cv2.imshow("test3",img4)
-                
-                step_size = 23
-                input_channel = 3
-                img = []
-                for j in range(len(features_out[input_channel])):
-                    img.append(features_out[input_channel][j])
-            
-                img5 = sum(img)/len(features_out[input_channel])  
-                #img1=  features_out[0].reshape((1024,1024))        
-                #cv2.normalize(img5,  img5, 0, 1, cv2.NORM_MINMAX)
-                #cv2.imshow("test4",img5)
-        
-        img2 = img2*255
-        img3 = img3*255
-        img4 = img4*255
-        img5 = img5*255
-        
-        img2= cv2.applyColorMap(img2.astype(np.uint8), cv2.COLORMAP_JET)
-        img3= cv2.applyColorMap(img3.astype(np.uint8), cv2.COLORMAP_JET)
-        img4= cv2.applyColorMap(img4.astype(np.uint8), cv2.COLORMAP_JET)
-        img5= cv2.applyColorMap(img5.astype(np.uint8), cv2.COLORMAP_JET)
-        
-        cv2.imshow("layer1",img2)
-        cv2.imshow("layer2",img3)
-        cv2.imshow("layer3",img4)
-        cv2.imshow("layer4",img5)
+            #cv2.normalize(img5,  img5, 0, 1, cv2.NORM_MINMAX)
+            cv2.imshow("test4",img5)
         
         cv2.waitKey(0)
         
-        cv2.imwrite("stage_1.jpg", img2)
-        cv2.imwrite("stage_2.jpg", img3)
-        cv2.imwrite("stage_3.jpg", img4)
-        cv2.imwrite("stage_4.jpg", img5)
+        cv2.imwrite("stage_1.jpg", img2*255)
+        cv2.imwrite("stage_2.jpg", img3*255)
+        cv2.imwrite("stage_3.jpg", img4*255)
+        cv2.imwrite("stage_4.jpg", img5*255)
 
         pred_depth = pred_depth[mask]
         gt_depth = gt_depth[mask]

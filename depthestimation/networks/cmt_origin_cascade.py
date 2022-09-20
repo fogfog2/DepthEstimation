@@ -419,6 +419,8 @@ class CMT_Layer_Select(t.nn.Module):
             layer = norm_layer(num_features[i_layer])
             layer_name = f'norm{i_layer}'
             self.add_module(layer_name, layer)
+            
+        self.activation = t.nn.GELU()
 
     def forward(self, x):
         
@@ -432,6 +434,7 @@ class CMT_Layer_Select(t.nn.Module):
             norm_layer = getattr(self, f'norm1')
             x_out = x_cmtb2.permute(0, 3, 2, 1).contiguous()
             x_out = norm_layer(x_out)
+            x_out = self.activation(x_out)
             x_out = x_out.permute(0, 3, 2, 1).contiguous()
             self.features.append(x_out)
         else:
@@ -445,6 +448,7 @@ class CMT_Layer_Select(t.nn.Module):
             norm_layer = getattr(self, f'norm2')
             x_out = x_cmtb3.permute(0, 3, 2, 1).contiguous()
             x_out = norm_layer(x_out)
+            x_out = self.activation(x_out)
             x_out = x_out.permute(0, 3, 2, 1).contiguous()
             self.features.append(x_out)
         else:
@@ -457,6 +461,7 @@ class CMT_Layer_Select(t.nn.Module):
 
         x_out = x_cmtb4.permute(0, 3, 2, 1).contiguous()
         x_out = norm_layer(x_out)
+        x_out = self.activation(x_out)
         x_out = x_out.permute(0, 3, 2, 1).contiguous()
         self.features.append(x_out)
 

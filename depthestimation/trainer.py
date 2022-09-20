@@ -347,8 +347,12 @@ class Trainer:
             self.parameters_to_train += list(self.models["depth"].parameters())
             self.parameters_to_train += list(self.models["pose"].parameters())
             self.parameters_to_train += list(self.models["pose_encoder"].parameters())
-            #self.model_optimizer = optim.Adam(self.parameters_to_train, self.opt.learning_rate)
-            self.model_optimizer = optim.AdamW(self.parameters_to_train, self.opt.learning_rate)
+            #
+             
+            if self.opt.use_adamw:
+                self.model_optimizer = optim.AdamW(self.parameters_to_train, self.opt.learning_rate)
+            else:
+                self.model_optimizer = optim.Adam(self.parameters_to_train, self.opt.learning_rate)
             # self.model_lr_scheduler = optim.lr_scheduler.StepLR(
             #     self.model_optimizer, self.opt.scheduler_step_size, self.opt.scheduler_step_ratio)
             self.model_lr_scheduler = optim.lr_scheduler.StepLR(
@@ -512,17 +516,18 @@ class Trainer:
                 losses = self.compute_losses(inputs, outputs, is_multi=False)
             else:
                 features = self.models["encoder"](inputs["color_aug", 0, 0])            
+                outputs["features"] = features
                 outputs.update(self.models["depth"](features))
                 
-                with torch.no_grad():
-                    sample_features = self.models["encoder"](inputs["color_aug", -1, 0])            
-                    sample_output = self.models["depth"](sample_features)
-                    
-                    sample_features2 = self.models["encoder"](inputs["color_aug", 1, 0])            
-                    sample_output2 = self.models["depth"](sample_features2)
-                    
-                    outputs["disp_sample",-1] =sample_output               
-                    outputs["disp_sample",1] =sample_output2               
+                #with torch.no_grad():
+                sample_features = self.models["encoder"](inputs["color_aug", -1, 0])            
+                sample_output = self.models["depth"](sample_features)
+                
+                sample_features2 = self.models["encoder"](inputs["color_aug", 1, 0])            
+                sample_output2 = self.models["depth"](sample_features2)
+                
+                outputs["disp_sample",-1] =sample_output               
+                outputs["disp_sample",1] =sample_output2               
                 
                 self.generate_images_pred_drl(inputs, outputs, is_multi=False)
                 losses = self.compute_losses_drl(inputs, outputs, is_multi=False)
@@ -776,7 +781,16 @@ class Trainer:
             reprojection_loss = 0.85 * ssim_loss + 0.15 * l1_loss
 
         return reprojection_loss
+    
+    def compute_depth_reprojection_loss(self, pred, target):
+        """Computes reprojection loss between a batch of predicted and target images
+        """
+        abs_diff = torch.abs(target - pred)
+        l1_loss = abs_diff.mean(1, True)
 
+        reprojection_loss = l1_loss
+
+        return reprojection_loss
     @staticmethod
     def compute_loss_masks(reprojection_loss, identity_reprojection_loss):
         """ Compute loss masks for each of standard reprojection and depth hint
@@ -956,7 +970,7 @@ class Trainer:
 
             for frame_id in self.opt.frame_ids[1:]:
                 pred = outputs[("depth_warped_recon", frame_id, scale)]                
-                depth_reprojection_losses.append(self.compute_reprojection_loss(pred, depth))
+                depth_reprojection_losses.append(self.compute_depth_reprojection_loss(pred, depth))
             depth_reprojection_losses = torch.cat(depth_reprojection_losses, 1)
             depth_reprojection_loss, _ = torch.min(depth_reprojection_losses, dim=1, keepdim=True)
             depth_reprojection_loss = depth_reprojection_loss.mean()*self.opt.reconstruction_loss_weight
