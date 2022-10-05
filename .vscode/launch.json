@@ -12,7 +12,15 @@
             "cwd": "${workspaceFolder}",
             "env": {"PYTHONPATH": "${cwd}" },            
             
-                
+            // "program": "${workspaceFolder}/depthestimation/train.py",
+            // "args": ["--data_path=/home/sj/kitti",
+            // "--cuda_device=0",
+            // "--log_dir=/home/sj/tmp/many_kitti",   
+            // //"--train_monodepth",
+            // //"--no_teacher",            
+            // "--freeze_teacher_epoch=15",
+            // "--png"]
+
             // "program": "${workspaceFolder}/depthestimation/train.py",
             // "args": ["--data_path=/home/sj/colon",
             // "--cuda_device=0",
@@ -23,15 +31,16 @@
             // "--png"]
 
 
-            // "program": "${workspaceFolder}/depthestimation/train.py",
-            // "args": ["--data_path=/media/sj/data/mid_drone",
-            // "--cuda_device=0",
-            // "--log_dir=/home/sj/tmp/mono_drone",   
-            // "--train_monodepth",
-            // "--no_teacher",            
-            // "--scheduler_step_ratio=0.1",
-            // "--freeze_teacher_epoch=-1",
-            // "--png"]
+            "program": "${workspaceFolder}/depthestimation/train.py",
+            "args": ["--data_path=/media/sj/data/mid_drone",
+            "--cuda_device=0",
+            "--log_dir=/home/sj/tmp/mono_r_drone",   
+            "--train_monodepth",
+           // "--train_model=cmt",
+            "--no_teacher",            
+            "--scheduler_step_ratio=0.5",
+            "--freeze_teacher_epoch=-1",
+            "--png"]
 
             // "program": "${workspaceFolder}/depthestimation/train.py",
             // "args": ["--data_path=/home/sj/colon",
@@ -53,15 +62,15 @@
             // "--freeze_teacher_epoch=-1",
             // "--png"]
 
-            "program": "${workspaceFolder}/depthestimation/evaluate_depth_ucl.py",
-            "args": ["--data_path=/home/sj/colon",
-                "--load_weights_folder=/home/sj/tmp/many_colon/mdp/models/weights_39",
-            //    "--load_weights_folder=/media/sj/data/endo_depth/mono_adam_s5_r05_adam/mdp/models/weights_39",
-                "--eval_split=custom_ucl",
-                "--eval_mono",
-              //  "--no_teacher",
-             //   "--cmt_use_upconv",
-                "--png"]
+            // "program": "${workspaceFolder}/depthestimation/evaluate_depth_ucl.py",
+            // "args": ["--data_path=/home/sj/colon",
+            //     "--load_weights_folder=/home/sj/tmp/many_colon/mdp/models/weights_39",
+            // //    "--load_weights_folder=/media/sj/data/endo_depth/mono_adam_s5_r05_adam/mdp/models/weights_39",
+            //     "--eval_split=custom_ucl",
+            //     "--eval_mono",
+            //   //  "--no_teacher",
+            //  //   "--cmt_use_upconv",
+            //     "--png"]
 
             //  "program": "${workspaceFolder}/depthestimation/train.py",
             //  "args": ["--data_path=/home/sj/colon",
