@@ -18,7 +18,7 @@ class DepthOptions:
         self.parser.add_argument("--data_path",
                                  type=str,
                                  help="path to the training data",
-                                 default=os.path.join(file_dir, "kitti_data"))
+                                 default=os.path.join(file_dir, "dummy_data"))
         self.parser.add_argument("--log_dir",
                                  type=str,
                                  help="log directory",
@@ -33,8 +33,8 @@ class DepthOptions:
                                  type=str,
                                  help="which training split to use",
                                  choices=["eigen_zhou", "eigen_full", "odom", "benchmark",
-                                          "cityscapes_preprocessed","custom_ucl"],
-                                 default="eigen_zhou")
+                                          "cityscapes_preprocessed","custom_ucl","custom_dummy"],
+                                 default="custom_dummy")
         self.parser.add_argument("--num_layers",
                                  type=int,
                                  help="number of resnet layers",
@@ -68,7 +68,7 @@ class DepthOptions:
         self.parser.add_argument("--dataset",
                                  type=str,
                                  help="dataset to train on",
-                                 default="kitti",
+                                 default="custom_ucl",
                                  choices=["kitti", "kitti_odom", "kitti_depth", "kitti_test",
                                           "cityscapes_preprocessed", "custom_ucl"])
         self.parser.add_argument("--png",
@@ -77,11 +77,11 @@ class DepthOptions:
         self.parser.add_argument("--height",
                                  type=int,
                                  help="input image height",
-                                 default=192)
+                                 default=256)
         self.parser.add_argument("--width",
                                  type=int,
                                  help="input image width",
-                                 default=640)
+                                 default=256)
         self.parser.add_argument("--disparity_smoothness",
                                  type=float,
                                  help="disparity smoothness weight",
@@ -129,7 +129,7 @@ class DepthOptions:
                                  help="attetnion channel",
                                  action="store_true")
         
-       #depth_reconstruction_loss
+        #depth_reconstruction_loss
         
         self.parser.add_argument("--depth_reconstruction_loss",
                                  help="depth_reconstruction_loss",
@@ -147,7 +147,7 @@ class DepthOptions:
         self.parser.add_argument("--batch_size",
                                  type=int,
                                  help="batch size",
-                                 default=16)
+                                 default=8)
         self.parser.add_argument("--learning_rate",
                                  type=float,
                                  help="learning rate",
@@ -155,7 +155,7 @@ class DepthOptions:
         self.parser.add_argument("--num_epochs",
                                  type=int,
                                  help="number of epochs",
-                                 default=20)
+                                 default=40)
         self.parser.add_argument("--scheduler_step_size",
                                  type=int,
                                  help="step size of the scheduler",
@@ -251,7 +251,7 @@ class DepthOptions:
         self.parser.add_argument("--num_workers",
                                  type=int,
                                  help="number of dataloader workers",
-                                 default=20)
+                                 default=12)
 
         # LOADING options
         self.parser.add_argument("--load_weights_folder",
