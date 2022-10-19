@@ -216,10 +216,10 @@ class Transform3D(nn.Module):
         
         return cam_points[:, 2, :].view(self.batch_size,1, self.height, self.width)
     
-def upsample(x):
+def upsample(x,factor=2):
     """Upsample input tensor by a factor of 2
     """
-    return F.interpolate(x, scale_factor=2, mode="nearest")
+    return F.interpolate(x, scale_factor=factor, mode="nearest")
 
 
 def get_smooth_loss(disp, img):
@@ -237,6 +237,27 @@ def get_smooth_loss(disp, img):
 
     return grad_disp_x.mean() + grad_disp_y.mean()
 
+
+class BCELoss(nn.Module):
+
+    def __init__(self):
+        super(BCELoss,self).__init__()
+        self.bceloss = nn.BCELoss()
+
+    def forward(self,gt, pred):
+        gt = gt.type(torch.cuda.FloatTensor)
+        return self.bceloss(pred ,gt)
+
+# def compute_bce(gt,pred):
+#     return torch.nn.BCELoss(gt, pred)
+
+def compute_rmse(gt, pred):
+    """Computation of error metrics between predicted and ground truth depths
+    """
+    rmse = (gt - pred) ** 2
+    rmse = torch.sqrt(rmse.mean())
+
+    return rmse
 
 class SSIM(nn.Module):
     """Layer to compute the SSIM loss between a pair of images

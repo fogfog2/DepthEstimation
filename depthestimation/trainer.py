@@ -207,6 +207,7 @@ class Trainer:
                          "cityscapes_preprocessed": datasets.CityscapesPreprocessedDataset,
                          "kitti_odom": datasets.KITTIOdomDataset,
                          "custom_ucl": datasets.UCLRAWDataset,
+                         "custom_dummy": datasets.DUMMYRAWDataset2,
                          "custom_mid": datasets.MIDRAWDataset}
         self.dataset = datasets_dict[self.opt.dataset]
 
@@ -768,7 +769,13 @@ class Trainer:
                 if not self.opt.disable_automasking:
                     outputs[("color_identity", frame_id, scale)] = \
                         inputs[("color", frame_id, source_scale)]
-                        
+                    
+    def compute_intensity_loss(self,color, disp):
+
+        abs_diff = torch.abs(color - disp)
+        l1_loss = abs_diff.mean(1, True)
+        return l1_loss
+
     def compute_reprojection_loss(self, pred, target):
         """Computes reprojection loss between a batch of predicted and target images
         """
@@ -839,6 +846,9 @@ class Trainer:
             disp = outputs[("disp", scale)]
             color = inputs[("color", 0, scale)]
             target = inputs[("color", 0, source_scale)]
+
+            intensitylosses = self.compute_intensity_loss(color,disp).mean()
+
 
             for frame_id in self.opt.frame_ids[1:]:
                 pred = outputs[("color", frame_id, scale)]
@@ -925,7 +935,8 @@ class Trainer:
                 consistency_loss = 0
 
             losses['reproj_loss/{}'.format(scale)] = reprojection_loss
-
+            losses['intensity_loss/{}'.format(scale)] = intensitylosses
+            #loss += reprojection_loss + consistency_loss+ intensitylosses*0.01
             loss += reprojection_loss + consistency_loss
 
             mean_disp = disp.mean(2, True).mean(3, True)

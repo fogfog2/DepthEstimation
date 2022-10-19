@@ -16,7 +16,7 @@ import pandas as pd
 
 
 from depthestimation.kitti_utils import generate_depth_map
-from .dummy_mono_dataset import DUMMYMonoDataset
+from .dummy2_mono_dataset import DUMMYMonoDataset
 
 
 class DUMMYDataset(DUMMYMonoDataset):
@@ -26,7 +26,15 @@ class DUMMYDataset(DUMMYMonoDataset):
         super(DUMMYDataset, self).__init__(*args, **kwargs)
 
         # NOTE: Make sure your intrinsics matrix is *normalized* by the original image size
+        self.K = np.array([[0.3468, 0, 0.4992, 0],
+                           [0, 0.3544, 0.4978, 0],
+                           [0, 0, 1, 0],
+                           [0, 0, 0, 1]], dtype=np.float32)
+
+
         self.full_res_shape = (256, 256)
+
+        self.side_map = {"2": 2, "3": 3, "l": 2, "r": 3}
 
     def load_data_path(self,index):
         line = self.filenames[index].split()
@@ -36,8 +44,22 @@ class DUMMYDataset(DUMMYMonoDataset):
         return img_path, label_file, label_num
 
     
-    def get_color(self, folder, do_flip):
-        color = self.loader(self.get_image_path(folder))
+    def index_to_folder_and_frame_idx(self, index):
+        """Convert index in the dataset to a folder name, frame_idx and any other bits
+        """
+        line = self.filenames[index].split()        
+        
+        tt = os.path.basename(line[0])
+        base, ext = os.path.splitext(tt)
+
+        
+        frame_index = int(base[-4:])
+        folder = os.path.dirname(line[0])
+        
+        return folder, frame_index
+
+    def get_color(self, folder,frame_index, side, do_flip):
+        color = self.loader(self.get_image_path(folder,frame_index, side))
 
         if do_flip:
             color = color.transpose(pil.FLIP_LEFT_RIGHT)
@@ -53,15 +75,16 @@ class DUMMYDataset(DUMMYMonoDataset):
         cls = csv_file.iloc[:,4].values[label_num]
         return px, py, cls
 
-class DUMMYRAWDataset(DUMMYDataset):
+class DUMMYRAWDataset2(DUMMYDataset):
     """KITTI dataset which loads the original velodyne depth maps for ground truth
     """
     def __init__(self, *args, **kwargs):
-        super(DUMMYRAWDataset, self).__init__(*args, **kwargs)
+        super(DUMMYRAWDataset2, self).__init__(*args, **kwargs)
 
 
-    def get_image_path(self, folder):
+    def get_image_path(self, folder,frame_index, side):
         image_path = os.path.join(self.data_path, folder)        
+        image_path = os.path.join(image_path, "frame"+str(frame_index).zfill(4)+".jpg")
         return image_path
 
     def get_depth(self, folder, frame_index, side, do_flip):

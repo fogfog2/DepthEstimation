@@ -18,7 +18,7 @@ class DepthOptions:
         self.parser.add_argument("--data_path",
                                  type=str,
                                  help="path to the training data",
-                                 default=os.path.join(file_dir, "dummy_data"))
+                                 default="/media/sj/data2/colon_new")
         self.parser.add_argument("--log_dir",
                                  type=str,
                                  help="log directory",
@@ -68,9 +68,9 @@ class DepthOptions:
         self.parser.add_argument("--dataset",
                                  type=str,
                                  help="dataset to train on",
-                                 default="custom_ucl",
+                                 default="custom_dummy",
                                  choices=["kitti", "kitti_odom", "kitti_depth", "kitti_test",
-                                          "cityscapes_preprocessed", "custom_ucl"])
+                                          "cityscapes_preprocessed", "custom_ucl", "custom_dummy"])
         self.parser.add_argument("--png",
                                  help="if set, trains from raw KITTI png files (instead of jpgs)",
                                  action="store_true")
@@ -155,7 +155,7 @@ class DepthOptions:
         self.parser.add_argument("--num_epochs",
                                  type=int,
                                  help="number of epochs",
-                                 default=40)
+                                 default=50)
         self.parser.add_argument("--scheduler_step_size",
                                  type=int,
                                  help="step size of the scheduler",
@@ -163,7 +163,7 @@ class DepthOptions:
         self.parser.add_argument("--scheduler_step_ratio",
                                  type=float,
                                  help="step ratio of the scheduler",
-                                 default=0.1)
+                                 default=0.5)
         self.parser.add_argument("--use_adamw",
                                  help="default = adam",
                                  action="store_true")
@@ -251,7 +251,7 @@ class DepthOptions:
         self.parser.add_argument("--num_workers",
                                  type=int,
                                  help="number of dataloader workers",
-                                 default=12)
+                                 default=8)
 
         # LOADING options
         self.parser.add_argument("--load_weights_folder",
@@ -294,9 +294,9 @@ class DepthOptions:
                                  help="optional path to a .npy disparities file to evaluate")
         self.parser.add_argument("--eval_split",
                                  type=str,
-                                 default="eigen",
+                                 default="custom_dummy",
                                  choices=["eigen", "eigen_benchmark", "benchmark", "odom_9",
-                                          "odom_10", "cityscapes", "custom_ucl"],
+                                          "odom_10", "cityscapes", "custom_ucl", "custom_dummy"],
                                  help="which split to run eval on")
         self.parser.add_argument("--save_pred_disps",
                                  help="if set saves predicted disparities",
