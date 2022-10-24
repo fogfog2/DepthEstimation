@@ -343,6 +343,8 @@ class CMT_Layer_Select(t.nn.Module):
 
         widths = [int(input_width/4), int(input_width/8), int(input_width/16), int(input_width/32)]
         heights = [int(input_height/4), int(input_height/8), int(input_height/16), int(input_height/32)]
+        
+        self.use_activation = False
         self.start_layer = start_layer
 
         
@@ -434,7 +436,8 @@ class CMT_Layer_Select(t.nn.Module):
             norm_layer = getattr(self, f'norm1')
             x_out = x_cmtb2.permute(0, 3, 2, 1).contiguous()
             x_out = norm_layer(x_out)
-            x_out = self.activation(x_out)
+            if self.use_activation:
+                x_out = self.activation(x_out)
             x_out = x_out.permute(0, 3, 2, 1).contiguous()
             self.features.append(x_out)
         else:
@@ -448,7 +451,8 @@ class CMT_Layer_Select(t.nn.Module):
             norm_layer = getattr(self, f'norm2')
             x_out = x_cmtb3.permute(0, 3, 2, 1).contiguous()
             x_out = norm_layer(x_out)
-            x_out = self.activation(x_out)
+            if self.use_activation:
+                x_out = self.activation(x_out)
             x_out = x_out.permute(0, 3, 2, 1).contiguous()
             self.features.append(x_out)
         else:
@@ -461,7 +465,8 @@ class CMT_Layer_Select(t.nn.Module):
 
         x_out = x_cmtb4.permute(0, 3, 2, 1).contiguous()
         x_out = norm_layer(x_out)
-        x_out = self.activation(x_out)
+        if self.use_activation:
+            x_out = self.activation(x_out)
         x_out = x_out.permute(0, 3, 2, 1).contiguous()
         self.features.append(x_out)
 
