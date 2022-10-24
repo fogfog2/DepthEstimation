@@ -155,7 +155,7 @@ class DepthOptions:
         self.parser.add_argument("--num_epochs",
                                  type=int,
                                  help="number of epochs",
-                                 default=20)
+                                 default=40)
         self.parser.add_argument("--scheduler_step_size",
                                  type=int,
                                  help="step size of the scheduler",
@@ -296,7 +296,7 @@ class DepthOptions:
                                  type=str,
                                  default="eigen",
                                  choices=["eigen", "eigen_benchmark", "benchmark", "odom_9",
-                                          "odom_10", "cityscapes", "custom_ucl"],
+                                          "odom_10", "cityscapes", "custom_ucl","custom_mid"],
                                  help="which split to run eval on")
         self.parser.add_argument("--save_pred_disps",
                                  help="if set saves predicted disparities",

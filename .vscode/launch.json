@@ -96,11 +96,22 @@
 
             // "program": "${workspaceFolder}/depthestimation/evaluate_depth_ucl.py",
             // "args": ["--data_path=/home/sj/colon",
-            //     "--load_weights_folder=/home/sj/tmp/many_colon/mdp/models/weights_39",
-            // //    "--load_weights_folder=/media/sj/data/endo_depth/mono_adam_s5_r05_adam/mdp/models/weights_39",
+            //     //"--load_weights_folder=/home/sj/tmp/many_colon/mdp/models/weights_39",
+            //     "--load_weights_folder=/media/sj/data/mono_test/many_colon/mdp/models/weights_39",
             //     "--eval_split=custom_ucl",
             //     "--eval_mono",
             //   //  "--no_teacher",
+            //  //   "--cmt_use_upconv",
+            //     "--png"]
+
+            // "program": "${workspaceFolder}/depthestimation/evaluate_depth_mid.py",
+            // "args": ["--data_path=/media/sj/data/mid_drone",
+            //     "--load_weights_folder=/home/sj/tmp/mono_drone_cmt_r05/mdp/models/weights_19",
+            // //    "--load_weights_folder=/media/sj/data/endo_depth/mono_adam_s5_r05_adam/mdp/models/weights_39",
+            //     "--eval_split=custom_mid",
+            //     "--eval_mono",
+            //     "--no_teacher",
+            //     "--train_model=cmt",
             //  //   "--cmt_use_upconv",
             //     "--png"]
 
