@@ -65,7 +65,7 @@ class DUMMYMonoDataset(data.Dataset):
             self.contrast = (0.8, 1.2)
             self.saturation = (0.8, 1.2)
             self.hue = (-0.1, 0.1)
-            transforms.ColorJitter.get_params(
+            transforms.ColorJitter(
                 self.brightness, self.contrast, self.saturation, self.hue)
         except TypeError:
             self.brightness = 0.2
@@ -104,8 +104,9 @@ class DUMMYMonoDataset(data.Dataset):
                 if inputs[(n, im, i)].sum() == 0:
                     inputs[(n + "_aug", im, i)] = inputs[(n, im, i)]
                 else:
-                    #inputs[(n + "_aug", im, i)] = self.to_tensor(color_aug(f))
-                    inputs[(n + "_aug", im, i)] = inputs[(n, im, i)]
+                    AUG = color_aug(f)
+                    inputs[(n + "_aug", im, i)] = self.to_tensor(AUG)
+                    #inputs[(n + "_aug", im, i)] = inputs[(n, im, i)]
 
     def __len__(self):
         return len(self.filenames)
@@ -181,7 +182,7 @@ class DUMMYMonoDataset(data.Dataset):
             inputs[("inv_K", scale)] = torch.from_numpy(inv_K)
 
         if do_color_aug:
-            color_aug = transforms.ColorJitter.get_params(
+            color_aug = transforms.ColorJitter(
                 self.brightness, self.contrast, self.saturation, self.hue)
         else:
             color_aug = (lambda x: x)

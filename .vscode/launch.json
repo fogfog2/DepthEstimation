@@ -30,10 +30,10 @@
             // //"--freeze_teacher_epoch=15",
             // "--png"]
 
-            "program": "${workspaceFolder}/depthestimation/train.py",
+            "program": "${workspaceFolder}/depthestimation/train2.py",
             "args": ["--data_path=/media/sj/data2/colon_new",
             "--cuda_device=0",
-            "--log_dir=/home/sj/tmp/mono_colon_dummy_test", 
+            "--log_dir=/home/sj/tmp/mono_colon_dummy_ucl_join_test", 
             "--train_monodepth",
             "--no_teacher",            
             //"--freeze_teacher_epoch=15",

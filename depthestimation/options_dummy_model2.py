@@ -19,6 +19,10 @@ class DepthOptions:
                                  type=str,
                                  help="path to the training data",
                                  default="/media/sj/data2/colon_new")
+        self.parser.add_argument("--data_path2",
+                                 type=str,
+                                 help="path to the training data",
+                                 default="/home/sj/colon")
         self.parser.add_argument("--log_dir",
                                  type=str,
                                  help="log directory",
@@ -35,6 +39,13 @@ class DepthOptions:
                                  choices=["eigen_zhou", "eigen_full", "odom", "benchmark",
                                           "cityscapes_preprocessed","custom_ucl","custom_dummy"],
                                  default="custom_dummy")
+        self.parser.add_argument("--split2",
+                                 type=str,
+                                 help="which training split to use",
+                                 choices=["eigen_zhou", "eigen_full", "odom", "benchmark",
+                                          "cityscapes_preprocessed","custom_ucl","custom_dummy"],
+                                 default="custom_ucl")
+
         self.parser.add_argument("--num_layers",
                                  type=int,
                                  help="number of resnet layers",
@@ -69,6 +80,12 @@ class DepthOptions:
                                  type=str,
                                  help="dataset to train on",
                                  default="custom_dummy",
+                                 choices=["kitti", "kitti_odom", "kitti_depth", "kitti_test",
+                                          "cityscapes_preprocessed", "custom_ucl", "custom_dummy"])
+        self.parser.add_argument("--dataset2",
+                                 type=str,
+                                 help="dataset to train on",
+                                 default="custom_ucl",
                                  choices=["kitti", "kitti_odom", "kitti_depth", "kitti_test",
                                           "cityscapes_preprocessed", "custom_ucl", "custom_dummy"])
         self.parser.add_argument("--png",
@@ -251,7 +268,7 @@ class DepthOptions:
         self.parser.add_argument("--num_workers",
                                  type=int,
                                  help="number of dataloader workers",
-                                 default=16)
+                                 default=1)
 
         # LOADING options
         self.parser.add_argument("--load_weights_folder",
