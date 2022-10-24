@@ -26,11 +26,14 @@ class DUMMYDataset(DUMMYMonoDataset):
         super(DUMMYDataset, self).__init__(*args, **kwargs)
 
         # NOTE: Make sure your intrinsics matrix is *normalized* by the original image size
-        self.K = np.array([[0.3468, 0, 0.4992, 0],
-                           [0, 0.3544, 0.4978, 0],
+        # self.K = np.array([[0.3468, 0, 0.4992, 0],
+        #                    [0, 0.3544, 0.4978, 0],
+        #                    [0, 0, 1, 0],
+        #                    [0, 0, 0, 1]], dtype=np.float32)
+        self.K = np.array([[0.7584, 0, 0.5084, 0],
+                           [0, 1.0083, 0.4770, 0],
                            [0, 0, 1, 0],
                            [0, 0, 0, 1]], dtype=np.float32)
-
 
         self.full_res_shape = (256, 256)
 
