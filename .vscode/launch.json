@@ -31,7 +31,7 @@
             // "--png"]
 
             "program": "${workspaceFolder}/depthestimation/train2.py",
-            "args": ["--data_path=/media/sj/data2/colon_new",
+            "args": ["--data_path=/media/sj/data/colon_new",
             "--cuda_device=0",
             "--log_dir=/home/sj/tmp/mono_colon_dummy_ucl_join_test", 
             "--train_monodepth",

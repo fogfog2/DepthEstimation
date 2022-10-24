@@ -27,7 +27,16 @@ def pil_loader(path):
     with open(path, 'rb') as f:
         with Image.open(f) as img:
             return img.convert('RGB')
-
+    
+def specular_remove(input):
+    aug_color =np.asarray(input)
+    #gray = cv2.cvtColor(aug_color,cv2.COLOR_BGR2GRAY)
+    skernel = np.ones((5,5),np.float32)/25.0
+    mid_result = cv2.erode(aug_color,skernel,iterations=5)   
+    mid_result = cv2.GaussianBlur(mid_result,(5,5),0)        
+    output = cv2.dilate(mid_result,skernel,iterations=4)        
+    diff = abs(aug_color-output)
+    return output, diff
 
 class DUMMYMonoDataset(data.Dataset):
     """Superclass for monocular dataloaders
@@ -82,6 +91,7 @@ class DUMMYMonoDataset(data.Dataset):
 
         #self.load_depth = self.check_depth()
 
+    
     def preprocess(self, inputs, color_aug):
         """Resize colour images to the required scales and augment if required
 
@@ -89,12 +99,13 @@ class DUMMYMonoDataset(data.Dataset):
         images in this item. This ensures that all images input to the pose network receive the
         same augmentation.
         """
+        
         for k in list(inputs):
             if "color" in k:
                 n, im, i = k
                 for i in range(self.num_scales):
                     inputs[(n, im, i)] = self.resize[i](inputs[(n, im, i - 1)])
-
+        
         for k in list(inputs):
             f = inputs[k]
             if "color" in k:
@@ -104,9 +115,18 @@ class DUMMYMonoDataset(data.Dataset):
                 if inputs[(n, im, i)].sum() == 0:
                     inputs[(n + "_aug", im, i)] = inputs[(n, im, i)]
                 else:
-                    AUG = color_aug(f)
-                    inputs[(n + "_aug", im, i)] = self.to_tensor(AUG)
+                    AUG = color_aug(f)                   
+                    removed, diff = specular_remove(AUG)
+                    #specular_mask = Image.fromarray(diff)
+                    specular_removed = Image.fromarray(removed)
+                   # inputs[(n + "_specular_mask", im, i)] = self.to_tensor(specular_mask)
+                    inputs[(n + "_aug", im, i)] = self.to_tensor(specular_removed)
+                    #inputs[(n + "_aug", im, i)] = self.to_tensor(AUG)
                     #inputs[(n + "_aug", im, i)] = inputs[(n, im, i)]
+                    
+
+
+
 
     def __len__(self):
         return len(self.filenames)
