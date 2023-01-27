@@ -388,40 +388,42 @@ class Trainer:
         print("Training")
         self.set_train()
 
-        for batch_idx, inputs in enumerate(self.train_loader):
+        if self.epoch < 20:
+                
+            for batch_idx, inputs in enumerate(self.train_loader):
 
-            before_op_time = time.time()
+                before_op_time = time.time()
 
-            outputs, losses = self.process_batch(inputs, is_train=True)
-            self.model_optimizer.zero_grad()
-            losses["loss"].backward()
-            self.model_optimizer.step()
-            outputs['lr'] = self.model_optimizer.param_groups[0]['lr']
-
-            
-            duration = time.time() - before_op_time
-
-            # log less frequently after the first 2000 steps to save time & disk space
-            early_phase = batch_idx % self.opt.log_frequency == 0 and self.step < 2000
-            late_phase = self.step % 2000 == 0
-
-            if early_phase or late_phase:
-                self.log_time(batch_idx, duration, losses["loss"].cpu().data)
-
-                if "depth_gt" in inputs:
-                    self.compute_depth_losses(inputs, outputs, losses)
-
+                outputs, losses = self.process_batch(inputs, is_train=True)
+                self.model_optimizer.zero_grad()
+                losses["loss"].backward()
+                self.model_optimizer.step()
+                outputs['lr'] = self.model_optimizer.param_groups[0]['lr']
 
                 
-                self.log("train", inputs, outputs, losses)
-                self.val()             
+                duration = time.time() - before_op_time
 
-            if self.opt.save_intermediate_models and late_phase:
-                self.save_model(save_step=True)
+                # log less frequently after the first 2000 steps to save time & disk space
+                early_phase = batch_idx % self.opt.log_frequency == 0 and self.step < 2000
+                late_phase = self.step % 2000 == 0
 
-            if self.step == self.opt.freeze_teacher_step:
-                self.freeze_teacher()
-            self.step += 1         
+                if early_phase or late_phase:
+                    self.log_time(batch_idx, duration, losses["loss"].cpu().data)
+
+                    if "depth_gt" in inputs:
+                        self.compute_depth_losses(inputs, outputs, losses)
+
+
+                    
+                    self.log("train", inputs, outputs, losses)
+                    self.val()             
+
+                if self.opt.save_intermediate_models and late_phase:
+                    self.save_model(save_step=True)
+
+                if self.step == self.opt.freeze_teacher_step:
+                    self.freeze_teacher()
+                self.step += 1         
 
         for batch_idx, inputs in enumerate(self.train_loader2):
 

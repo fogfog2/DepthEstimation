@@ -155,7 +155,7 @@ class DepthOptions:
         self.parser.add_argument("--num_epochs",
                                  type=int,
                                  help="number of epochs",
-                                 default=40)
+                                 default=30)
         self.parser.add_argument("--scheduler_step_size",
                                  type=int,
                                  help="step size of the scheduler",
