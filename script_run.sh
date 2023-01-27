@@ -1,40 +1,35 @@
 export PYTHONPATH="${PYTHONPATH}:/home/sj/src/DepthEstimation" 
 
 #ucl
-DATA_PATH=/home/sj/colon
-
-LOG_PATH0=/home/sj/tmp/mono_drl_07_adam
-#python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH0 --train_monodepth --no_teacher --freeze_teacher_epoch=-1 --png --scheduler_step_ratio=0.7
-
-for i in 20 30 39
- do 
-  python depthestimation/evaluate_depth_ucl.py --data_path=$DATA_PATH --load_weights_folder=$LOG_PATH0/mdp/models/weights_$i --eval_split=custom_ucl --eval_mono --no_teacher --png 
- done
+DATA_PATH=/media/sj/data/colon_new2
 
 
-LOG_PATH1=/home/sj/tmp/mono_drl_07_adam_nossim_01_cmt
-python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH1 --train_monodepth --no_teacher --freeze_teacher_epoch=-1 --png --scheduler_step_ratio=0.7 --depth_reconstruction_loss --reconstruction_loss_weight=0.1 --train_model=cmt
-for i in 20 30 39
- do 
-  python depthestimation/evaluate_depth_ucl.py --data_path=$DATA_PATH --load_weights_folder=$LOG_PATH1/mdp/models/weights_$i --eval_split=custom_ucl --eval_mono --no_teacher --png --train_model=cmt
- done
-
-LOG_PATH2=/home/sj/tmp/mono_drl_03_adam_nossim_01_cmt
-python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH2 --train_monodepth --no_teacher --freeze_teacher_epoch=-1 --png --scheduler_step_ratio=0.3 --depth_reconstruction_loss --reconstruction_loss_weight=0.1 --train_model=cmt
-
-for i in 20 30 39
- do 
-  python depthestimation/evaluate_depth_ucl.py --data_path=$DATA_PATH --load_weights_folder=$LOG_PATH2/mdp/models/weights_$i --eval_split=custom_ucl --eval_mono --no_teacher --png --train_model=cmt
- done
+LOG_PATH1=/home/sj/tmp/mono_cn2_cmt
+python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH1 --train_monodepth --no_teacher --png --train_model=cmt --num_epochs=50
 
 
+LOG_PATH2=/home/sj/tmp/mono_cn2_resnet
+python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH2 --train_monodepth --no_teacher --png --train_model=resnet --num_epochs=50
 
-LOG_PATH5=/home/sj/tmp/mono_drl_07_adam_nossim_05_cmt
-python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH5 --train_monodepth --no_teacher --freeze_teacher_epoch=-1 --png --scheduler_step_ratio=0.7 --depth_reconstruction_loss --reconstruction_loss_weight=0.5 --train_model=cmt
 
-for i in 20 30 39
- do 
-  python depthestimation/evaluate_depth_ucl.py --data_path=$DATA_PATH --load_weights_folder=$LOG_PATH5/mdp/models/weights_$i --eval_split=custom_ucl --eval_mono --no_teacher --png --train_model=cmt
- done
+LOG_PATH3=/home/sj/tmp/many_cn2_cmt_r50
+python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH3 --png --train_model=cmt --num_epochs=50
 
+
+LOG_PATH4=/home/sj/tmp/many_cn2_resnet_r50
+python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH4 --png --train_model=resnet --num_epochs=50
+
+
+LOG_PATH5=/home/sj/tmp/many_cn2_cmt_r50_att
+python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH5 --png --train_model=cmt --num_epochs=50 --use_attention_decoder
+
+LOG_PATH6=/home/sj/tmp/many_cn2_resnet_r50_att
+python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH6 --png --train_model=resnet --num_epochs=50 --use_attention_decoder
+
+LOG_PATH7=/home/sj/tmp/mono_cn2_cmt_att
+python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH7 --train_monodepth --no_teacher --png --train_model=cmt --num_epochs=50 --use_attention_decoder
+
+
+LOG_PATH8=/home/sj/tmp/mono_cn2_resnet_att
+python depthestimation/train.py --data_path=$DATA_PATH --log_dir=$LOG_PATH8 --train_monodepth --no_teacher --png --train_model=resnet --num_epochs=50 --use_attention_decoder
 

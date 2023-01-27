@@ -21,7 +21,7 @@ import json
 
 from utils import readlines, sec_to_hm_str
 from layers import SSIM, BackprojectDepth, Project3D, Transform3D, transformation_from_parameters, \
-    disp_to_depth, get_smooth_loss, compute_depth_errors
+    disp_to_depth, get_smooth_loss, compute_depth_errors, intrinsic_from_parameters
 
 from depthestimation import datasets, networks
 import matplotlib.pyplot as plt
@@ -61,9 +61,12 @@ class Trainer:
 
         #self.train_teacher_and_pose = not self.opt.freeze_teacher_and_pose
         self.train_teacher = not self.opt.freeze_teacher and not self.opt.no_teacher
+        #self.train_teacher= False
         self.train_pose = not self.opt.freeze_pose
         
         #if self.train_teacher_and_pose:
+        # self.min_depth_tracker = 0.1
+        # self.max_depth_tracker = 10.0
         if self.train_teacher:
             print('using adaptive depth binning!')
             self.min_depth_tracker = 0.1
@@ -142,7 +145,7 @@ class Trainer:
 
         if not self.opt.no_teacher:
             self.models["mono_encoder"] = \
-                networks.ResnetEncoder(18, self.opt.weights_init == "pretrained")
+                networks.ResnetEncoder(50, self.opt.weights_init == "pretrained")
             self.models["mono_encoder"].to(self.device)
 
             # self.models["mono_encoder"] = \
@@ -173,11 +176,37 @@ class Trainer:
                                  num_frames_to_predict_for=2)
         self.models["pose"].to(self.device)
 
+
+        if self.opt.intrinsic_learning:
+            self.models["intrinsic"] = networks.IntrinsicsHead()
+            self.models["intrinsic"].to(self.device)
+            # self.models["focal"] = \
+            #     networks.FocalDecoder(self.models["pose_encoder"].num_ch_enc,
+            #                         num_input_features=1,
+            #                         num_frames_to_predict_for=2,
+            #                         stride=1,
+            #                         input_width=self.opt.width,
+            #                         input_height=self.opt.height)
+
+            # self.models["focal"].to(self.device)
+
+            # self.models["offset"] = \
+            #     networks.OffsetDecoder(self.models["pose_encoder"].num_ch_enc,
+            #                         num_input_features=1,
+            #                         num_frames_to_predict_for=2)
+            # self.models["offset"].to(self.device)
+
+
+
         #if self.train_teacher_and_pose:
         if self.train_pose:   
             self.parameters_to_train += list(self.models["pose_encoder"].parameters())
             self.parameters_to_train += list(self.models["pose"].parameters())
-
+       
+        if self.opt.intrinsic_learning:
+            self.parameters_to_train += list(self.models["intrinsic"].parameters())
+            #self.parameters_to_train += list(self.models["focal"].parameters())
+            #self.parameters_to_train += list(self.models["offset"].parameters())
         
         
         if self.opt.use_adamw:
@@ -211,9 +240,13 @@ class Trainer:
                          "custom_mid": datasets.MIDRAWDataset}
         self.dataset = datasets_dict[self.opt.dataset]
 
-        fpath = os.path.join("splits", self.opt.split, "{}_files.txt")
+        if self.opt.tiny_test:
+            fpath = os.path.join("splits", self.opt.split, "{}_files_tiny.txt")
+        else:
+            fpath = os.path.join("splits", self.opt.split, "{}_files.txt")
         train_filenames = readlines(fpath.format("train"))
         val_filenames = readlines(fpath.format("val"))
+
         img_ext = '.png' if self.opt.png else '.jpg'
 
         num_train_samples = len(train_filenames)
@@ -348,6 +381,10 @@ class Trainer:
             self.parameters_to_train += list(self.models["encoder"].parameters())
             self.parameters_to_train += list(self.models["depth"].parameters())
             self.parameters_to_train += list(self.models["pose"].parameters())
+            if self.opt.intrinsic_learning:
+                self.parameters_to_train += list(self.models["intrinsic"].parameters())
+                # self.parameters_to_train += list(self.models["offset"].parameters())
+                # self.parameters_to_train += list(self.models["focal"].parameters())
             self.parameters_to_train += list(self.models["pose_encoder"].parameters())
             #
              
@@ -425,10 +462,17 @@ class Trainer:
         
         #if self.train_teacher_and_pose:
         if self.train_pose:
-            pose_pred = self.predict_poses(inputs, None)
+            if self.opt.intrinsic_learning:
+                pose_pred = self.predict_poses_cam(inputs, None)
+            else:
+                pose_pred = self.predict_poses(inputs, None)
         else:
             with torch.no_grad():
-                pose_pred = self.predict_poses(inputs, None)
+                if self.opt.intrinsic_learning:
+                    pose_pred = self.predict_poses_cam(inputs, None)
+                else:
+                    pose_pred = self.predict_poses(inputs, None)
+                    
         outputs.update(pose_pred)
         mono_outputs.update(pose_pred)
 
@@ -634,6 +678,162 @@ class Trainer:
 
         return outputs
 
+    
+
+    def predict_poses_cam(self, inputs, features=None):
+        """Predict poses between input frames for monocular sequences.
+        """
+        # def _intrinsic_from_parameters(self, inputs, outputs, invert=False):
+        #     # adjusting intrinsics to match each scale in the pyramid
+
+        #     focal = offset = count =0
+        #     for f_i in self.opt.frame_ids[1:]:
+        #         focal = focal + outputs[("intrinsic_focal"),f_i]
+        #         offset = offset + outputs[("intrinsic_offset"),f_i]
+        #         count = count+1
+
+        #     focal_sum = (focal / count)
+        #     offset_sum = (offset / count) +0.5
+            
+        #     # focal_sum = outputs[("intrinsic_focal"),1]
+        #     # offset_sum = outputs[("intrinsic_offset"),1]
+
+        #     mat = torch.zeros((focal_sum.shape[0], 4, 4)).to(device=focal_sum.device)
+
+        #     fx = focal_sum[..., 0].clone().unsqueeze(1)
+        #     fy = focal_sum[..., 1].clone().unsqueeze(1)
+        #     cx = offset_sum[..., 0].clone().unsqueeze(1)
+        #     cy = offset_sum[..., 1].clone().unsqueeze(1)
+
+        #     mat[:,0,0] = torch.squeeze(fx)
+        #     mat[:,1,1] = torch.squeeze(fy)
+        #     mat[:,0,2] = torch.squeeze(cx)
+        #     mat[:,1,2] = torch.squeeze(cy)
+        #     mat[:,2,2] = 1
+        #     mat[:,3,3] = 1
+
+        #     for scale in range(self.num_scales):
+        #         K = mat.clone()
+        #         K[:,0, :] *= self.opt.width // (2 ** scale)
+        #         K[:,1, :] *= self.opt.height // (2 ** scale)
+        #         inv_K = torch.linalg.pinv(K)                
+        #         outputs[("K", scale)] = K
+        #         outputs[("inv_K", scale)] = inv_K
+                
+        #     return outputs
+
+        # def _intrinsic_from_parameters2(self, inputs, outputs, invert=-1):
+        #     # adjusting intrinsics to match each scale in the pyramid
+
+        #     focal =  outputs[("intrinsic_focal"),invert]
+        #     offset =  outputs[("intrinsic_offset"),invert]
+            
+        #     mat = torch.zeros((focal.shape[0], 4, 4)).to(device=focal.device)
+
+        #     fx = focal[..., 0].clone().unsqueeze(1)
+        #     fy = focal[..., 1].clone().unsqueeze(1)
+        #     cx = offset[..., 0].clone().unsqueeze(1)
+        #     cy = offset[..., 1].clone().unsqueeze(1)
+
+        #     mat[:,0,0] = torch.squeeze(fx)
+        #     mat[:,1,1] = torch.squeeze(fy)
+        #     mat[:,0,2] = torch.squeeze(cx)
+        #     mat[:,1,2] = torch.squeeze(cy)
+        #     mat[:,2,2] = 1
+        #     mat[:,3,3] = 1
+               
+        #     return mat
+
+        outputs = {}
+        if self.num_pose_frames == 2:
+            # In this setting, we compute the pose to each source frame via a
+            # separate forward pass through the pose network.
+
+            # predict poses for reprojection loss
+            # select what features the pose network takes as input
+            pose_feats = {f_i: inputs["color_aug", f_i, 0] for f_i in self.opt.frame_ids}
+            for f_i in self.opt.frame_ids[1:]:
+                if f_i != "s":
+                    # To maintain ordering we always pass frames in temporal order
+                    if f_i < 0:
+                        pose_inputs = [pose_feats[f_i], pose_feats[0]]
+                    else:
+                        pose_inputs = [pose_feats[0], pose_feats[f_i]]
+
+                    pose_inputs = [self.models["pose_encoder"](torch.cat(pose_inputs, 1))]
+
+                    axisangle, translation = self.models["pose"](pose_inputs)
+                    outputs[("axisangle", 0, f_i)] = axisangle
+                    outputs[("translation", 0, f_i)] = translation
+
+                    # Invert the matrix if the frame id is negative
+                    outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
+                        axisangle[:, 0], translation[:, 0], invert=(f_i < 0))
+                    
+                    #inver pose matrix
+                    outputs[("cam_T_cam", -1, f_i)] = transformation_from_parameters(
+                        axisangle[:, 0], translation[:, 0], invert=(f_i > 0))
+
+                    # outputs[("intrinsic_focal"),f_i] = self.models["focal"](pose_inputs)
+                    # outputs[("intrinsic_offset"),f_i] = self.models["offset"](pose_inputs)
+                    # outputs[("mat",f_i)] = intrinsic_from_parameters(inputs,outputs ,f_i)
+                    outputs[("mat",f_i)] = self.models["intrinsic"](pose_inputs,1,1)
+
+            #outputs.update(intrinsic_from_parameters(self, inputs,outputs))
+
+            
+            # mat_A = intrinsic_from_parameters(inputs,outputs ,-1)
+            # mat_B = intrinsic_from_parameters(inputs,outputs ,1)
+            
+            mat = 0.5*(outputs[("mat",-1)] +outputs[("mat",1)] )
+            for scale in range(self.num_scales):
+                K = mat.clone()
+                K[:,0, :] *= self.opt.width // (2 ** scale)
+                K[:,1, :] *= self.opt.height // (2 ** scale)
+                inv_K = torch.linalg.pinv(K)                
+                outputs[("K", scale)] = K
+                outputs[("inv_K", scale)] = inv_K
+                # outputs[("K", scale)] =  inputs[("K", scale)]
+                # outputs[("inv_K", scale)] =  inputs[("inv_K", scale)]
+
+            # now we need poses for matching - compute without gradients
+            pose_feats = {f_i: inputs["color_aug", f_i, 0] for f_i in self.matching_ids}
+            with torch.no_grad():
+                # compute pose from 0->-1, -1->-2, -2->-3 etc and multiply to find 0->-3
+                for fi in self.matching_ids[1:]:
+                    if fi < 0:
+                        pose_inputs = [pose_feats[fi], pose_feats[fi + 1]]
+                        pose_inputs = [self.models["pose_encoder"](torch.cat(pose_inputs, 1))]
+                        axisangle, translation = self.models["pose"](pose_inputs)
+                        pose = transformation_from_parameters(
+                            axisangle[:, 0], translation[:, 0], invert=True)
+
+                        # now find 0->fi pose
+                        if fi != -1:
+                            pose = torch.matmul(pose, inputs[('relative_pose', fi + 1)])
+
+                    else:
+                        pose_inputs = [pose_feats[fi - 1], pose_feats[fi]]
+                        pose_inputs = [self.models["pose_encoder"](torch.cat(pose_inputs, 1))]
+                        axisangle, translation = self.models["pose"](pose_inputs)
+                        pose = transformation_from_parameters(
+                            axisangle[:, 0], translation[:, 0], invert=False)
+
+                        # now find 0->fi pose
+                        if fi != 1:
+                            pose = torch.matmul(pose, inputs[('relative_pose', fi - 1)])
+
+                    # set missing images to 0 pose
+                    for batch_idx, feat in enumerate(pose_feats[fi]):
+                        if feat.sum() == 0:
+                            pose[batch_idx] *= 0
+
+                    inputs[('relative_pose', fi)] = pose
+        else:
+            raise NotImplementedError
+
+        return outputs
+
     def val(self):
         """Validate the model on a single minibatch
         """
@@ -678,14 +878,22 @@ class Trainer:
                     # don't update posenet based on multi frame prediction
                     T = T.detach()
 
-                
-                #D_t   -> Q_t 
-                cam_points,_ = self.backproject_depth[source_scale](
-                    depth, inputs[("inv_K", source_scale)])
-                
-                #Q_t   ->    Q_t->s  ->  p_s
-                pix_coords = self.project_3d[source_scale](
-                    cam_points, inputs[("K", source_scale)], T)
+                if self.opt.intrinsic_learning:
+                    #D_t   -> Q_t 
+                    cam_points,_ = self.backproject_depth[source_scale](
+                        depth, outputs[("inv_K", source_scale)])
+                    
+                    #Q_t   ->    Q_t->s  ->  p_s
+                    pix_coords = self.project_3d[source_scale](
+                        cam_points, outputs[("K", source_scale)], T)
+                else:
+                      #D_t   -> Q_t 
+                    cam_points,_ = self.backproject_depth[source_scale](
+                        depth, inputs[("inv_K", source_scale)])
+                    
+                    #Q_t   ->    Q_t->s  ->  p_s
+                    pix_coords = self.project_3d[source_scale](
+                        cam_points, inputs[("K", source_scale)], T)
 
                 outputs[("sample", frame_id, scale)] = pix_coords
 
@@ -1149,6 +1357,19 @@ class Trainer:
 
         if outputs.get("lr") is not None:
             writer.add_scalar("lr", outputs["lr"], self.step)
+
+        
+        # writer.add_scalars("K", {'fx': outputs[('K',0)][0,0,0],
+        #                         'fy': outputs[('K',0)][0,1,1],
+        #                         'cx': outputs[('K',0)][0,0,2],
+        #                         'cy': outputs[('K',0)][0,1,2]},  self.step)
+
+        # writer.add_scalar("fx", outputs[('K',0)][0,0,0], self.step)
+        # writer.add_scalar("fy", outputs[('K',0)][0,1,1], self.step)
+        # writer.add_scalar("cx", outputs[('K',0)][0,0,2], self.step)
+        # writer.add_scalar("cy", outputs[('K',0)][0,1,2], self.step)
+
+
 
         for j in range(min(4, self.opt.batch_size)):  # write a maxmimum of four images
             s = 0  # log only max scale

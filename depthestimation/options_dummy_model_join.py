@@ -18,11 +18,11 @@ class DepthOptions:
         self.parser.add_argument("--data_path",
                                  type=str,
                                  help="path to the training data",
-                                 default="/media/sj/data2/colon_new")
+                                 default="/media/sj/data/colon_new")
         self.parser.add_argument("--data_path2",
                                  type=str,
                                  help="path to the training data",
-                                 default="/home/sj/colon")
+                                 default="/media/sj/data/colon")
         self.parser.add_argument("--log_dir",
                                  type=str,
                                  help="log directory",
@@ -121,6 +121,13 @@ class DepthOptions:
                                  type=int,
                                  help="frames to load",
                                  default=[0, -1, 1])
+        self.parser.add_argument("--intrinsic_learning",
+                                 help="if set, train intrinsic mat)",
+                                 action="store_true")
+        self.parser.add_argument("--tiny_test",
+                                 help="if set, train tiny model (for debugging))",
+                                 action="store_true")
+          
         #decoder option
         self.parser.add_argument("--use_attention_decoder",
                                  help="if set, cmt use upconv)",
@@ -268,7 +275,7 @@ class DepthOptions:
         self.parser.add_argument("--num_workers",
                                  type=int,
                                  help="number of dataloader workers",
-                                 default=16)
+                                 default=12)
 
         # LOADING options
         self.parser.add_argument("--load_weights_folder",

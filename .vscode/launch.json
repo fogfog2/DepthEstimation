@@ -21,23 +21,56 @@
             // "--freeze_teacher_epoch=15",
             // "--png"]
 
+            "program": "${workspaceFolder}/depthestimation/train.py",
+            "args": ["--data_path=/media/sj/data/colon_new",
+            "--cuda_device=0",
+            "--log_dir=/home/sj/tmp/mono_colon_dummy_cmt_6", 
+            "--train_monodepth",
+            "--num_epochs=50",
+            "--train_model=cmt",
+            "--use_attention_decoder",
+            //"--freeze_teacher",
+            //"--mono_weights_folder=/home/sj/tmp/model_many",
+            "--no_teacher",   
+            //"--intrinsic_learning",
+            //"--freeze_teacher_epoch=15",
+            "--png"]
+
+
             // "program": "${workspaceFolder}/depthestimation/train.py",
-            // "args": ["--data_path=/home/sj/colon",
+            // "args": ["--data_path=/media/sj/data/colon_new",
             // "--cuda_device=0",
-            // "--log_dir=/home/sj/tmp/mono_colon_test", 
+            // "--log_dir=/home/sj/tmp/mono_colon_dummy_cmt_1", 
             // "--train_monodepth",
-            // "--no_teacher",            
+            // "--train_model=cmt",
+            // "--no_teacher",   
+            // //"--intrinsic_learning",
             // //"--freeze_teacher_epoch=15",
             // "--png"]
 
-            "program": "${workspaceFolder}/depthestimation/train2.py",
-            "args": ["--data_path=/media/sj/data2/colon_new",
-            "--cuda_device=0",
-            "--log_dir=/home/sj/tmp/mono_colon_dummy_ucl_join_k_change", 
-            "--train_monodepth",
-            "--no_teacher",            
-            //"--freeze_teacher_epoch=15",
-            "--png"]
+            // "program": "${workspaceFolder}/depthestimation/train2.py",
+            // "args": [
+            //     //"--data_path=/media/sj/data/colon_new",
+            // //"--tiny_test",
+            // "--cuda_device=0",
+            // "--log_dir=/home/sj/tmp/mono_colon_join_cmt", 
+            // "--train_monodepth",
+            // "--train_model=cmt",
+            // "--no_teacher",            
+            // //"--intrinsic_learning",
+            // //"--freeze_teacher_epoch=15",
+            // "--png"]
+
+            // "program": "${workspaceFolder}/depthestimation/train2.py",
+            // "args": ["--data_path=/media/sj/data/colon_new",
+            // //"--tiny_test",
+            // "--cuda_device=0",
+            // "--log_dir=/home/sj/tmp/mono_colon_dummy_ucl_join_k_change", 
+            // "--train_monodepth",
+            // "--no_teacher",            
+            // "--intrinsic_learning",
+            // //"--freeze_teacher_epoch=15",
+            // "--png"]
 
         //     "program": "${workspaceFolder}/depthestimation/train.py",
         //     "args": ["--data_path=/media/sj/data/mid_drone",
@@ -75,13 +108,15 @@
             //     "--png"]
 
             // "program": "${workspaceFolder}/depthestimation/train.py",
-            // "args": ["--data_path=/home/sj/colon",
-            // "--log_dir=/home/sj/tmp/mono_s5_r05_rp_adam",   
+            // "args": ["--data_path=/media/sj/data/colon",
+            // "--log_dir=/home/sj/tmp/many_cmt_20e_r50",   
             // "--train_model=cmt",
-            // "--train_monodepth",
-            // "--no_teacher",
+            // //"--train_monodepth",
+            // //"--no_teacher",
+
+            // "--num_epochs=50",
             // "--scheduler_step_ratio=0.5",
-            // "--freeze_teacher_epoch=-1",
+            // "--freeze_teacher_epoch=15",
             // "--png"]
 
 
