@@ -30,11 +30,16 @@ class DUMMYDataset(DUMMYMonoDataset):
         #                    [0, 0.3544, 0.4978, 0],
         #                    [0, 0, 1, 0],
         #                    [0, 0, 0, 1]], dtype=np.float32)
-        self.K = np.array([[0.7584, 0, 0.5084, 0],
-                           [0, 1.0083, 0.4770, 0],
+        #colon_new
+        # self.K = np.array([[0.7584, 0, 0.5084, 0],
+        #                    [0, 1.0083, 0.4770, 0],
+        #                    [0, 0, 1, 0],
+        #                    [0, 0, 0, 1]], dtype=np.float32)
+        #colon_new2
+        self.K = np.array([[0.7311, 0, 0.4800, 0],
+                           [0, 0.9764, 0.4881, 0],
                            [0, 0, 1, 0],
                            [0, 0, 0, 1]], dtype=np.float32)
-
         self.full_res_shape = (256, 256)
 
         self.side_map = {"2": 2, "3": 3, "l": 2, "r": 3}

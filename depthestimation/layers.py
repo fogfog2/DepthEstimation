@@ -23,6 +23,29 @@ def disp_to_depth(disp, min_depth, max_depth):
     return scaled_disp, depth
 
 
+
+def intrinsic_from_parameters(inputs, outputs, invert=-1):
+            # adjusting intrinsics to match each scale in the pyramid
+
+            focal =  outputs[("intrinsic_focal"),invert]
+            offset =  outputs[("intrinsic_offset"),invert]
+            
+            mat = torch.zeros((focal.shape[0], 4, 4)).to(device=focal.device)
+
+            fx = focal[..., 0].clone().unsqueeze(1)
+            fy = focal[..., 1].clone().unsqueeze(1)
+            cx = offset[..., 0].clone().unsqueeze(1)
+            cy = offset[..., 1].clone().unsqueeze(1)
+
+            mat[:,0,0] = torch.squeeze(fx)
+            mat[:,1,1] = torch.squeeze(fy)
+            mat[:,0,2] = torch.squeeze(cx)
+            mat[:,1,2] = torch.squeeze(cy)
+            mat[:,2,2] = 1
+            mat[:,3,3] = 1
+               
+            return mat
+
 def transformation_from_parameters(axisangle, translation, invert=False):
     """Convert the network's (axisangle, translation) output into a 4x4 matrix
     """

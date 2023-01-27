@@ -18,7 +18,7 @@ class DepthOptions:
         self.parser.add_argument("--data_path",
                                  type=str,
                                  help="path to the training data",
-                                 default=os.path.join(file_dir, "kitti_data"))
+                                 default="/media/sj/data/colon")
         self.parser.add_argument("--log_dir",
                                  type=str,
                                  help="log directory",
@@ -104,6 +104,12 @@ class DepthOptions:
                                  type=int,
                                  help="frames to load",
                                  default=[0, -1, 1])
+        self.parser.add_argument("--intrinsic_learning",
+                                 help="if set, train intrinsic mat)",
+                                 action="store_true")
+        self.parser.add_argument("--tiny_test",
+                                 help="if set, train tiny model (for debugging))",
+                                 action="store_true")
         #decoder option
         self.parser.add_argument("--use_attention_decoder",
                                  help="if set, cmt use upconv)",
@@ -163,7 +169,7 @@ class DepthOptions:
         self.parser.add_argument("--scheduler_step_ratio",
                                  type=float,
                                  help="step ratio of the scheduler",
-                                 default=0.1)
+                                 default=0.5)
         self.parser.add_argument("--use_adamw",
                                  help="default = adam",
                                  action="store_true")
@@ -294,7 +300,7 @@ class DepthOptions:
                                  help="optional path to a .npy disparities file to evaluate")
         self.parser.add_argument("--eval_split",
                                  type=str,
-                                 default="eigen",
+                                 default="custom_ucl",
                                  choices=["eigen", "eigen_benchmark", "benchmark", "odom_9",
                                           "odom_10", "cityscapes", "custom_ucl","custom_dummy"],
                                  help="which split to run eval on")

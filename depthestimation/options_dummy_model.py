@@ -18,7 +18,7 @@ class DepthOptions:
         self.parser.add_argument("--data_path",
                                  type=str,
                                  help="path to the training data",
-                                 default="/media/sj/data2/colon_new")
+                                 default="/media/sj/data/colon_new")
         self.parser.add_argument("--log_dir",
                                  type=str,
                                  help="log directory",
@@ -33,8 +33,8 @@ class DepthOptions:
                                  type=str,
                                  help="which training split to use",
                                  choices=["eigen_zhou", "eigen_full", "odom", "benchmark",
-                                          "cityscapes_preprocessed","custom_ucl","custom_dummy"],
-                                 default="custom_dummy")
+                                          "cityscapes_preprocessed","custom_ucl","custom_dummy","custom_dummy_new"],
+                                 default="custom_dummy_new")
         self.parser.add_argument("--num_layers",
                                  type=int,
                                  help="number of resnet layers",
@@ -104,6 +104,13 @@ class DepthOptions:
                                  type=int,
                                  help="frames to load",
                                  default=[0, -1, 1])
+        self.parser.add_argument("--intrinsic_learning",
+                                 help="if set, train intrinsic mat)",
+                                 action="store_true")
+        self.parser.add_argument("--tiny_test",
+                                 help="if set, train tiny model (for debugging))",
+                                 action="store_true")
+          
         #decoder option
         self.parser.add_argument("--use_attention_decoder",
                                  help="if set, cmt use upconv)",
