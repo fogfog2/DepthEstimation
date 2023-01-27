@@ -104,6 +104,12 @@ class DepthOptions:
                                  type=int,
                                  help="frames to load",
                                  default=[0, -1, 1])
+        self.parser.add_argument("--intrinsic_learning",
+                                 help="if set, train intrinsic mat)",
+                                 action="store_true")
+        self.parser.add_argument("--tiny_test",
+                    help="if set, train tiny model (for debugging))",
+                    action="store_true")
         #decoder option
         self.parser.add_argument("--use_attention_decoder",
                                  help="if set, cmt use upconv)",
