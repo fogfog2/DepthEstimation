@@ -336,8 +336,10 @@ class Trainer:
         self.start_time = time.time()
         for self.epoch in range(self.opt.num_epochs):
             if self.epoch == self.opt.freeze_teacher_epoch:
-                #self.freeze_teacher_and_pose()
-                self.freeze_teacher()
+                if self.opt.freeze_with_pose_intrinsic:
+                    self.freeze_teacher_and_pose()
+                else:
+                    self.freeze_teacher()
 
             self.run_epoch()
             if (self.epoch + 1) % self.opt.save_frequency == 0:

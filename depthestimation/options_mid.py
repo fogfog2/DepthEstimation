@@ -107,6 +107,9 @@ class DepthOptions:
         self.parser.add_argument("--intrinsic_learning",
                                  help="if set, train intrinsic mat)",
                                  action="store_true")
+        self.parser.add_argument("--freeze_with_pose_intrinsic",
+                                 help="if set, train intrinsic mat)",
+                                 action="store_true")
         self.parser.add_argument("--tiny_test",
                     help="if set, train tiny model (for debugging))",
                     action="store_true")
