@@ -34,7 +34,7 @@ class DepthOptions:
                                  help="which training split to use",
                                  choices=["eigen_zhou", "eigen_full", "odom", "benchmark",
                                           "cityscapes_preprocessed","custom_ucl","custom_dummy","custom_dummy_new"],
-                                 default="custom_dummy_new")
+                                 default="custom_dummy")
         self.parser.add_argument("--num_layers",
                                  type=int,
                                  help="number of resnet layers",
