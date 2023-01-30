@@ -462,7 +462,7 @@ def evaluate(opt):
             gt_depth =  cv2.imread(path,0)
             gt_height, gt_width = gt_depth.shape[:2]
         elif opt.eval_split =='custom_mid':            
-            path = os.path.join("/media/sj/data/datasets/mid_drone/",gt_depths[i])            
+            path = os.path.join("/media/sj/data2/datasets/mid_drone/",gt_depths[i])            
             gt_depth =  cv2.imread(path,0)                                
             gt_height, gt_width = gt_depth.shape[:2]
             
