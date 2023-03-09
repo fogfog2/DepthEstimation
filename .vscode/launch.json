@@ -22,13 +22,13 @@
             // "--png"]
 
             "program": "${workspaceFolder}/depthestimation/train.py",
-            "args": ["--data_path=/media/sj/data/colon_new",
+            "args": ["--data_path=/media/sj/data/datasets/colon_dummy",
             "--cuda_device=0",
             "--log_dir=/home/sj/tmp/mono_colon_dummy_cmt_6", 
             "--train_monodepth",
             "--num_epochs=50",
             "--train_model=cmt",
-            "--use_attention_decoder",
+            //"--use_attention_decoder",
             //"--freeze_teacher",
             //"--mono_weights_folder=/home/sj/tmp/model_many",
             "--no_teacher",   

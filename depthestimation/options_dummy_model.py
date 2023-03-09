@@ -107,6 +107,11 @@ class DepthOptions:
         self.parser.add_argument("--intrinsic_learning",
                                  help="if set, train intrinsic mat)",
                                  action="store_true")
+
+        self.parser.add_argument("--freeze_with_pose_intrinsic",
+                                 help="if set, train intrinsic mat)",                                 
+                                 action="store_true")
+
         self.parser.add_argument("--tiny_test",
                                  help="if set, train tiny model (for debugging))",
                                  action="store_true")
@@ -182,7 +187,7 @@ class DepthOptions:
         self.parser.add_argument("--scheduler_step_freeze_after_ratio",
                                  type=float,
                                  help="step ratio of the scheduler",
-                                 default=0.1)
+                                 default=0.5)
         self.parser.add_argument("--freeze_teacher_and_pose",
                                  action="store_true",
                                  help="If set, freeze the weights of the single frame teacher"
@@ -197,7 +202,7 @@ class DepthOptions:
                                       " network and pose network.")
         self.parser.add_argument("--freeze_teacher_epoch",
                                  type=int,
-                                 default=15,
+                                 default=-1,
                                  help="Sets the epoch number at which to freeze the teacher"
                                       "network and the pose network.")
         self.parser.add_argument("--freeze_teacher_step",
