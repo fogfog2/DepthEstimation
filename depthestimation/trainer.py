@@ -240,10 +240,12 @@ class Trainer:
                          "custom_mid": datasets.MIDRAWDataset}
         self.dataset = datasets_dict[self.opt.dataset]
 
+
         if self.opt.tiny_test:
-            fpath = os.path.join("splits", self.opt.split, "{}_files_tiny.txt")
+            fpath = os.path.join("splits","{}_files_tiny.txt")
         else:
-            fpath = os.path.join("splits", self.opt.split, "{}_files.txt")
+            fpath = os.path.join("splits","{}_files.txt")
+        fpath = os.path.join(self.opt.data_path,fpath)
         train_filenames = readlines(fpath.format("train"))
         val_filenames = readlines(fpath.format("val"))
 
