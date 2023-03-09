@@ -7,5 +7,5 @@ DATA_PATH=/media/sj/data/datasets/colon_new2
 LOG_PATH1=/home/sj/tmp/mono_resnet_50epoch
 
 #run script
-python ../../depthestimation/train_dummy.py --data_path=$DATA_PATH --log_dir=$LOG_PATH1 --split=custom_dummy_new --train_monodepth --no_teacher --png --train_model=resnet --num_epochs=50
+python ../../depthestimation/train_dummy.py --data_path=$DATA_PATH --log_dir=$LOG_PATH1 --train_monodepth --no_teacher --train_model=resnet --num_epochs=50
 
