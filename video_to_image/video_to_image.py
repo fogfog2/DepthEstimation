@@ -50,8 +50,6 @@ def main():
     test_save_txt_path = os.path.join(split_path,"test_files.txt")
 
     train_f = open(train_save_txt_path, "w")
-    val_f = open(val_save_txt_path, "w")
-    test_f = open(test_save_txt_path, "w")
 
     # 모든 비디오 파일에 대해 반복합니다.
     for vid in video_list:
@@ -122,36 +120,31 @@ def main():
 
             # 현재 프레임 번호를 증가시킵니다.
             frame_num += 1
-
-        # 랜덤하게 10%를 추출하여 validation set과 test set으로 나눕니다.
-        with open(train_save_txt_path, 'r') as train_file:
-            lines = train_file.readlines()
-            num_train = len(lines)
-            indices = list(range(num_train))
-            val_indices = set(random.sample(indices, int(num_train * 0.1)))
-            test_indices = set(random.sample(indices, int(num_train * 0.1)))
-            train_indices = set(indices) - val_indices - test_indices
-
-        # train, validation, test set에 해당하는 파일을 생성합니다.
-        with open(val_save_txt_path, 'w') as val_file, open(test_save_txt_path, 'w') as test_file:
-            for i, line in enumerate(lines):
-                if i in val_indices:
-                    # validation set에 이미지 경로를 저장합니다.
-                    val_file.write(line)
-                elif i in test_indices:
-                    # test set에 이미지 경로를 저장합니다.
-                    test_file.write(line)
-                else:
-                    # train set에 이미지 경로를 저장합니다.
-                    train_f.write(line)
-
+            
         # 다음 비디오의 이미지 시퀀스 번호를 업데이트합니다.
-        video_num += 1
-
-    # 텍스트 파일을 닫습니다.
+        video_num += 1    
     train_f.close()
-    val_f.close()
-    test_f.close()
+
+    # 랜덤하게 10%를 추출하여 validation set과 test set으로 나눕니다.
+    with open(train_save_txt_path, 'r') as train_file:
+        lines = train_file.readlines()
+        num_train = len(lines)
+        indices = list(range(num_train))
+        val_indices = set(random.sample(indices, int(num_train * 0.1)))
+        test_indices = set(random.sample(indices, int(num_train * 0.1)))
+
+    # train, validation, test set에 해당하는 파일을 생성합니다.
+    with open(val_save_txt_path, 'w') as val_file, open(test_save_txt_path, 'w') as test_file:
+        for i, line in enumerate(lines):
+            if i in val_indices:
+                # validation set에 이미지 경로를 저장합니다.
+                val_file.write(line)
+            
+            if i in test_indices:
+                # test set에 이미지 경로를 저장합니다.
+                test_file.write(line)
+
+       
 
 if __name__ == '__main__':
     main()
